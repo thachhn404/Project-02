@@ -1,0 +1,90 @@
+package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.persistence.OneToOne;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "collectors")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Collector {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "enterprise_id", nullable = false)
+    private RecyclingEnterprise enterprise;
+
+    @Column(name = "employee_code", length = 50)
+    private String employeeCode;
+
+    @Column(name = "vehicle_type", length = 50)
+    private String vehicleType;
+
+    @Column(name = "vehicle_plate", length = 20)
+    private String vehiclePlate;
+
+    @Column(name = "status", length = 20)
+    private String status;
+
+    @Column(name = "current_latitude", precision = 10, scale = 8)
+    private BigDecimal currentLatitude;
+
+    @Column(name = "current_longitude", precision = 11, scale = 8)
+    private BigDecimal currentLongitude;
+
+    @Column(name = "last_location_update")
+    private LocalDateTime lastLocationUpdate;
+
+    @Column(name = "total_collections")
+    private Integer totalCollections;
+
+    @Column(name = "successful_collections")
+    private Integer successfulCollections;
+
+    @Column(name = "total_weight_collected", precision = 12, scale = 2)
+    private BigDecimal totalWeightCollected;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void prePersist() {
+        if (status == null || status.isBlank()) {
+            status = "available";
+        }
+        if (totalCollections == null) {
+            totalCollections = 0;
+        }
+        if (successfulCollections == null) {
+            successfulCollections = 0;
+        }
+        if (totalWeightCollected == null) {
+            totalWeightCollected = BigDecimal.ZERO;
+        }
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+}
