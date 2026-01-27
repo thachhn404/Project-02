@@ -31,6 +31,6 @@ public interface WasteReportRepository extends JpaRepository<WasteReport, Intege
     @Query("SELECT w FROM WasteReport w WHERE w.status = :status AND w.isValid IS NULL")
     List<WasteReport> findPendingValidation(@Param("status") String status);
     
-    @Query("SELECT COUNT(w) FROM WasteReport w WHERE w.citizenId = :citizenId")
+    @Query("SELECT COUNT(w) FROM WasteReport w WHERE w.citizen.id = :citizenId")
     long countByCitizenId(@Param("citizenId") Integer citizenId);
 }
