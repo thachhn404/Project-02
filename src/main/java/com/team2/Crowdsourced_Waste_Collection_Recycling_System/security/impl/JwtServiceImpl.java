@@ -45,8 +45,6 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        // OAuth2 Resource Server thường mong đợi quyền nằm trong claim "scope" hoặc "scp"
-        // hoặc chúng ta có thể cấu hình JwtAuthenticationConverter để đọc từ claim khác.
         String authorities = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(" "));

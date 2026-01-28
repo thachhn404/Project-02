@@ -23,3 +23,9 @@ security:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
 
+open:
+  api:
+    title: "Crowdsourced Waste Collection & Recycling System API"
+    version: "1.0.0"
+    description: "Tài liệu API cho hệ thống thu gom và tái chế rác thải dựa trên cộng đồng."
+

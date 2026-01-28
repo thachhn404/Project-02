@@ -12,8 +12,13 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+/**
+ * Cấu hình Swagger/OpenAPI cho dự án.
+ * Cho phép kiểm thử API trực tiếp qua giao diện UI và hỗ trợ xác thực Bearer Token (JWT).
+ */
 @Configuration
 public class SwaggerConfig {
+
     @Bean
     public OpenAPI customOpenAPI(@Value("${open.api.title}") String title,
                                  @Value("${open.api.version}") String version,

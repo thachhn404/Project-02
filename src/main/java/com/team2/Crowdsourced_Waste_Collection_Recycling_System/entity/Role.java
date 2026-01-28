@@ -28,6 +28,9 @@ public class Role {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private java.util.Set<RolePermission> rolePermissions;
+
     @PrePersist
     void prePersist() {
         if (isActive == null) {

@@ -2,97 +2,75 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "waste_reports")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class WasteReport {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "report_code", unique = true, nullable = false, length = 20)
-    private String reportCode;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "citizen_id", nullable = false)
     private Citizen citizen;
 
-    @Column(name = "waste_type_id", nullable = false)
-    private Integer wasteTypeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "waste_type_id", nullable = false)
+    private WasteType wasteType;
 
-    @Column(name = "description", length = 1000)
+    @Column(nullable = false, length = 1000)
     private String description;
 
-    @Column(name = "estimated_weight_kg", precision = 10, scale = 2)
-    private BigDecimal estimatedWeightKg;
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
-    @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
+    @Column(nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
 
-    @Column(name = "longitude", nullable = false, precision = 11, scale = 8)
+    @Column(nullable = false, precision = 11, scale = 8)
     private BigDecimal longitude;
 
-    @Column(name = "address", length = 500)
+    @Column(nullable = false, length = 500)
     private String address;
 
-    @Column(name = "ward", length = 100)
-    private String ward;
+    @Column(nullable = false, length = 20)
+    private String status; // PENDING, ACCEPTED, REJECTED, COLLECTING, COMPLETED, CANCELLED
 
-    @Column(name = "city", length = 100)
-    private String city;
+    @Column(name = "is_confirmed_by_user")
+    private Boolean isConfirmedByUser = false;
 
-    @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
-    private String images;
+    @Column(name = "suggested_waste_type_code", length = 20)
+    private String suggestedWasteTypeCode;
 
-    @Column(name = "status", length = 20, nullable = false)
-    private String status;
-
-    @Column(name = "is_valid")
-    private Boolean isValid;
-
-    @Column(name = "validation_note", length = 500)
-    private String validationNote;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "validated_by")
-    private User validatedBy;
-
-    @Column(name = "validated_at")
-    private LocalDateTime validatedAt;
-
-    @Column(name = "points_awarded")
-    private Integer pointsAwarded;
-
-    @Column(name = "quality_rating")
-    private Integer qualityRating;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    void prePersist() {
         if (status == null) {
-            status = "pending";
+            status = "PENDING";
         }
-        if (pointsAwarded == null) {
-            pointsAwarded = 0;
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = createdAt;
         }
     }
 
     @PreUpdate
-    protected void onUpdate() {
+    void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
 }
