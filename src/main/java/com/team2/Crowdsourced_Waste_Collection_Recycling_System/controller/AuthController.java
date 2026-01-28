@@ -4,9 +4,12 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.Logi
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.LogoutRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RegisterRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.TokenResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,5 +32,11 @@ public class AuthController {
     public ResponseEntity<Void> logout(@RequestBody(required = false) LogoutRequest request) {
         authService.logout();
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<TokenResponse> refreshToken(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
+        return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
 }

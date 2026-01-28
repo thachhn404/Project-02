@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -49,6 +50,7 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    Set<String> roles;
 
     public Integer getId() {
         return id;

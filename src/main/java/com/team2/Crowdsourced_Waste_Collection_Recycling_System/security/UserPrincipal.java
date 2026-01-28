@@ -20,13 +20,29 @@ public class UserPrincipal implements UserDetails {
     }
 
     /**
-     * Trích xuất các quyền của người dùng.
-     * Prefix "ROLE_" được thêm vào để khớp với hasRole() trong SecurityConfig.
+     * Trích xuất các quyền của người dùng bao gồm Role và các Permission chi tiết.
+     * Role: ROLE_{roleCode}
+     * Permission: {permissionCode}
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String roleCode = user.getRole() != null ? user.getRole().getRoleCode() : "CITIZEN";
-        return List.of(new SimpleGrantedAuthority("ROLE_" + roleCode));
+        java.util.List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        
+        if (user.getRole() != null) {
+            // Thêm Role
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleCode()));
+            
+            // Thêm các Permission chi tiết từ Role
+            if (user.getRole().getRolePermissions() != null) {
+                user.getRole().getRolePermissions().forEach(rp -> {
+                    if (rp.getPermission() != null) {
+                        authorities.add(new SimpleGrantedAuthority(rp.getPermission().getPermissionCode()));
+                    }
+                });
+            }
+        }
+        
+        return authorities;
     }
 
     @Override

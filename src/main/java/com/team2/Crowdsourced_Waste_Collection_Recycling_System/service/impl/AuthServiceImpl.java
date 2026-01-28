@@ -1,28 +1,28 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.security.JwtService;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.security.UserPrincipal;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.LoginRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RegisterRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.TokenResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.mapper.UserMapper;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.UserRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.security.JwtService;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.security.UserPrincipal;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Triển khai các nghiệp vụ xác thực.
- * Sử dụng Spring Security AuthenticationManager để xác thực và JwtService để tạo token.
- */
+
 @Service
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
@@ -31,29 +31,27 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserMapper userMapper;
+    private final UserDetailsService userDetailsService;
 
     public AuthServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder,
                            AuthenticationManager authenticationManager,
                            JwtService jwtService,
-                           UserMapper userMapper) {
+                           UserMapper userMapper,
+                           UserDetailsService userDetailsService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userMapper = userMapper;
+        this.userDetailsService = userDetailsService;
     }
 
-    /**
-     * Xử lý đăng ký người dùng mới.
-     * 1. Kiểm tra tính hợp lệ của thông tin đầu vào.
-     * 2. Kiểm tra email đã tồn tại chưa.
-     * 3. Mã hóa mật khẩu và lưu người dùng vào database.
-     * 4. Tạo bộ token (Access & Refresh) trả về cho client.
-     */
+
     @Override
+    @Transactional
     public AuthenResponse register(RegisterRequest request) {
         String email = request.getEmail();
         if (email == null || email.isBlank()) {
@@ -90,13 +88,9 @@ public class AuthServiceImpl implements AuthService {
         return new AuthenResponse(token, refreshToken, "Bearer", jwtService.getExpirationMs(), userMapper.toDto(u));
     }
 
-    /**
-     * Xử lý đăng nhập.
-     * 1. Sử dụng AuthenticationManager để xác thực email/password.
-     * 2. Lấy thông tin người dùng từ DB.
-     * 3. Tạo và trả về bộ token.
-     */
+
     @Override
+    @Transactional(readOnly = true)
     public AuthenResponse login(LoginRequest request) {
         String email = request.getEmail();
         if (email == null || email.isBlank()) {
@@ -122,12 +116,41 @@ public class AuthServiceImpl implements AuthService {
         return new AuthenResponse(token, refreshToken, "Bearer", jwtService.getExpirationMs(), userMapper.toDto(user));
     }
 
-    /**
-     * Xử lý đăng xuất.
-     * Xóa thông tin xác thực trong SecurityContext.
-     */
+
     @Override
     public void logout() {
+
         SecurityContextHolder.clearContext();
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public TokenResponse refreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refresh Token không được để trống");
+        }
+
+        try {
+            String email = jwtService.extractUsername(refreshToken);
+            var userDetails = userDetailsService.loadUserByUsername(email);
+
+            if (jwtService.isTokenValid(refreshToken, userDetails)) {
+                String newAccessToken = jwtService.generateToken(userDetails);
+
+                String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+
+                return TokenResponse.builder()
+                        .accessToken(newAccessToken)
+                        .refreshToken(newRefreshToken)
+                        .tokenType("Bearer")
+                        .expiresInMs(jwtService.getExpirationMs())
+                        .build();
+            } else {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh Token không hợp lệ hoặc đã hết hạn");
+            }
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh Token không hợp lệ: " + e.getMessage());
+        }
     }
 }
