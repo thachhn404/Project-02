@@ -1,14 +1,13 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.LoginRequest;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.LogoutRequest;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RegisterRequest;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenResponse;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.TokenResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.*;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AuthService;
+import com.nimbusds.jose.JOSEException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
 import java.util.Map;
 
 @RestController
@@ -16,27 +15,50 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
 
-    public AuthController(AuthService authService) { this.authService = authService; }
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/token")
+    ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
+        var result = authService.login(request);
+        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
+    }
+
+    @PostMapping("/introspect")
+    ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request)
+            throws ParseException, JOSEException {
+        var result = authService.introspect(request);
+        return ApiResponse.<IntrospectResponse>builder().result(result).build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> authenticate(@RequestBody RefreshRequest request)
+            throws ParseException, JOSEException {
+        var result = authService.refreshToken(request);
+        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
+    }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthenResponse> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    public ApiResponse<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(authService.register(request))
+                .build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(authService.login(request))
+                .build();
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody(required = false) LogoutRequest request) {
-        authService.logout();
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) throws ParseException, JOSEException {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String token = authorizationHeader.substring(7);
+            authService.logout(LogoutRequest.builder().token(token).build());
+        }
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/refresh-token")
-    public ResponseEntity<TokenResponse> refreshToken(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
-        return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
 }

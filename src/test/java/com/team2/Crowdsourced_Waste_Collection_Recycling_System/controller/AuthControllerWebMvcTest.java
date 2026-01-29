@@ -1,8 +1,8 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenResponse;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.security.JwtService;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.security.SecurityConfig;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.config.SecurityConfig;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenticationResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,25 +36,22 @@ public class AuthControllerWebMvcTest {
     @MockBean
     private AuthService authService;
 
-    @MockBean
-    private JwtService jwtService;
-
     @Autowired
     private MockMvc mockMvc;
 
     @Test
     void login_returns_200() throws Exception {
-        when(authService.login(any())).thenReturn(new AuthenResponse("token", "refreshToken", "Bearer", 1000L, null));
+        when(authService.login(any())).thenReturn(new AuthenticationResponse("token", true));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"a@b.com\",\"password\":\"pw\"}"))
+                        .content("{\"username\":\"a@b.com\",\"password\":\"pw\"}"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void register_returns_200() throws Exception {
-        when(authService.register(any())).thenReturn(new AuthenResponse("token", "refreshToken", "Bearer", 1000L, null));
+        when(authService.register(any())).thenReturn(new AuthenticationResponse("token", true));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

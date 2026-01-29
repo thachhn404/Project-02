@@ -8,24 +8,33 @@ spring:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
 server:
-  port: 8080
+  port: 8082
 
-security:
-  jwt:
-    secret: ${JWT_SECRET:72d6236b1a543277ad6973b2693a14ab13c437f8749b185a301f5034bbe3de36}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
-    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+jwt:
+  signerKey: "72d6236b1a543277ad6973b2693a14ab13c437f8749b185a301f5034bbe3de36"
+  valid-duration: 3600 # 1 hour in seconds
+  refreshable-duration: 36000 # 10 hours in seconds
 
 open:
   api:
     title: "Crowdsourced Waste Collection & Recycling System API"
     version: "1.0.0"
     description: "Tài liệu API cho hệ thống thu gom và tái chế rác thải dựa trên cộng đồng."
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  show-actuator: true
+  default-produces-media-type: application/json
+  writer-with-default-pretty-printer: true
 

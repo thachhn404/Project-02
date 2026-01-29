@@ -19,10 +19,17 @@ import java.util.List;
 @Configuration
 public class SwaggerConfig {
 
+    @Value("${open.api.title:Crowdsourced Waste System}")
+    private String title;
+
+    @Value("${open.api.version:1.0.0}")
+    private String version;
+
+    @Value("${open.api.description:API Documentation}")
+    private String description;
+
     @Bean
-    public OpenAPI customOpenAPI(@Value("${open.api.title}") String title,
-                                 @Value("${open.api.version}") String version,
-                                 @Value("${open.api.description}") String description) {
+    public OpenAPI customOpenAPI() {
         String securitySchemeName = "bearerAuth";
         return new OpenAPI()
                 .info(new Info().title(title).version(version).description(description))

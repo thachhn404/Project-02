@@ -1,9 +1,10 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.LoginRequest;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RegisterRequest;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenResponse;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.TokenResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.*;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenticationResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.IntrospectResponse;
+import com.nimbusds.jose.JOSEException;
+import java.text.ParseException;
 
 /**
  * Interface định nghĩa các nghiệp vụ xác thực người dùng.
@@ -11,15 +12,13 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Tok
  */
 public interface AuthService {
     
-
-    AuthenResponse register(RegisterRequest request);
+    AuthenticationResponse register(RegisterRequest request);
     
-
-    AuthenResponse login(LoginRequest request);
+    AuthenticationResponse login(AuthenticationRequest request);
     
+    void logout(LogoutRequest request) throws ParseException, JOSEException;
 
-    void logout();
+    AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException;
 
-
-    TokenResponse refreshToken(String refreshToken);
+    IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException;
 }

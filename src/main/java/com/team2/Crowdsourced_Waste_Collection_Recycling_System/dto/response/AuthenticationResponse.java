@@ -1,4 +1,4 @@
-package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request;
+package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LogoutRequest {
+public class AuthenticationResponse {
     String token;
+    boolean authenticated;
 }
