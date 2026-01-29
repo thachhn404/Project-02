@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface WasteReportRepository extends JpaRepository<WasteReport, Integer> {
-    List<WasteReport> findByCitizenId(Integer citizenId);
+    List<WasteReport> findByCitizen_Id(Integer citizenId);
     List<WasteReport> findByStatus(String status);
 }

@@ -33,7 +33,7 @@ public class EnterpriseController {
      * Yêu cầu quyền ENTERPRISE_ADMIN để thực hiện việc điều phối.
      */
     @PostMapping("/{id}/assign")
-    @PreAuthorize("hasAuthority('ASSIGN_COLLECTOR')")
+    @PreAuthorize("hasAuthority('enterprise.assign_collector')")
     public ResponseEntity<CollectionRequest> assignCollector(@PathVariable Integer id, @RequestParam Integer collectorId) {
         // Logic gán collector...
         return collectionRequestRepository.findById(id)

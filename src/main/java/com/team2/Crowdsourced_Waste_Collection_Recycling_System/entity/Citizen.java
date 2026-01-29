@@ -1,7 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table citizens
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "citizens")
@@ -9,47 +13,34 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Citizen {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     private User user;
 
-    @Column(length = 500)
+    @Column(name = "address", length = 500)
     private String address;
 
-    @Column(length = 100)
+    @Column(name = "ward", length = 100)
     private String ward;
 
-    @Column(length = 100)
+    @Column(name = "district", length = 100)
     private String district;
 
-    @Column(length = 100)
+    @Column(name = "city", length = 100)
     private String city;
 
     @Column(name = "total_points")
-    private Integer totalPoints = 0;
+    private Integer totalPoints;
 
     @Column(name = "total_reports")
-    private Integer totalReports = 0;
+    private Integer totalReports;
 
     @Column(name = "valid_reports")
-    private Integer validReports = 0;
-
-    @PrePersist
-    void prePersist() {
-        if (totalPoints == null) {
-            totalPoints = 0;
-        }
-        if (totalReports == null) {
-            totalReports = 0;
-        }
-        if (validReports == null) {
-            validReports = 0;
-        }
-    }
+    private Integer validReports;
 }

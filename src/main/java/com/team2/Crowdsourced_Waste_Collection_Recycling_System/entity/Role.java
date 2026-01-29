@@ -1,5 +1,6 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table roles
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 @Entity
 @Table(name = "roles")
 @Getter
@@ -16,30 +18,24 @@ import java.time.LocalDateTime;
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
-    @Column(name = "role_code", nullable = false, length = 20, unique = true)
+
+    @Column(name = "role_code", nullable = false, unique = true, length = 20)
     private String roleCode;
+
     @Column(name = "role_name", nullable = false, length = 50)
     private String roleName;
+
     @Column(name = "description", length = 500)
     private String description;
+
     @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Boolean isActive;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private java.util.Set<RolePermission> rolePermissions;
-
-    @PrePersist
-    void prePersist() {
-        if (isActive == null) {
-            isActive = true;
-        }
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
-
-
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    private Set<RolePermission> rolePermissions;
 }

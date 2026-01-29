@@ -1,7 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table recycling_enterprises
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,22 +16,22 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class RecyclingEnterprise {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
-    @Column(nullable = false, length = 255)
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(length = 500)
+    @Column(name = "address", length = 500)
     private String address;
 
-    @Column(length = 20)
+    @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(length = 255)
+    @Column(name = "email", length = 255)
     private String email;
 
     @Column(name = "license_number", length = 100)
@@ -36,10 +40,10 @@ public class RecyclingEnterprise {
     @Column(name = "tax_code", length = 50)
     private String taxCode;
 
-    @Column(length = 20)
+    @Column(name = "status", length = 20)
     private String status;
 
-    @Column(name = "total_collected_weight")
+    @Column(name = "total_collected_weight", precision = 12, scale = 2)
     private BigDecimal totalCollectedWeight;
 
     @Column(name = "created_at")
@@ -47,25 +51,4 @@ public class RecyclingEnterprise {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    void prePersist() {
-        if (status == null || status.isBlank()) {
-            status = "active";
-        }
-        if (totalCollectedWeight == null) {
-            totalCollectedWeight = BigDecimal.ZERO;
-        }
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = createdAt;
-        }
-    }
-
-    @PreUpdate
-    void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

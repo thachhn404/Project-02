@@ -1,7 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table enterprise_admins
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -11,10 +15,10 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class EnterpriseAdmin {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
@@ -25,22 +29,12 @@ public class EnterpriseAdmin {
     @JoinColumn(name = "enterprise_id", nullable = false)
     private RecyclingEnterprise enterprise;
 
-    @Column(length = 100)
+    @Column(name = "position", length = 100)
     private String position;
 
     @Column(name = "is_owner")
-    private Boolean isOwner = false;
+    private Boolean isOwner;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @PrePersist
-    void prePersist() {
-        if (isOwner == null) {
-            isOwner = false;
-        }
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }

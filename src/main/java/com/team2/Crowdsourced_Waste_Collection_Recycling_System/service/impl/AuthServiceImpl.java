@@ -89,7 +89,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Mặc định gán role CITIZEN nếu không chỉ định
         String roleCode = (request.getRoleCode() == null || request.getRoleCode().isBlank()) ? "CITIZEN" : request.getRoleCode();
-        Role role = roleRepository.findByRoleCode(roleCode)
+        Role role = roleRepository.findByRoleCodeIgnoreCase(roleCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quyền (Role) không tồn tại"));
 
         User u = new User();
@@ -239,7 +239,7 @@ public class AuthServiceImpl implements AuthService {
         StringJoiner stringJoiner = new StringJoiner(" ");
 
         if (user.getRole() != null) {
-            stringJoiner.add("ROLE_" + user.getRole().getRoleCode());
+            stringJoiner.add("ROLE_" + user.getRole().getRoleCode().toUpperCase());
             if (!CollectionUtils.isEmpty(user.getRole().getRolePermissions())) {
                 user.getRole().getRolePermissions().forEach(rolePermission -> {
                     stringJoiner.add(rolePermission.getPermission().getPermissionCode());
