@@ -1,7 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.config;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Permission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.RolePermission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.PermissionRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RolePermissionRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -9,23 +13,73 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.HashSet;
+
 @Configuration
 public class DataSeeder {
 
     @Bean
-    public CommandLineRunner initData(RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public CommandLineRunner initData(
+            RoleRepository roleRepository,
+            UserRepository userRepository,
+            PermissionRepository permissionRepository,
+            RolePermissionRepository rolePermissionRepository,
+            PasswordEncoder passwordEncoder) {
         return args -> {
+            // 1. Seed Permissions
+            Permission createReport = createPermissionIfNotFound(permissionRepository, "CREATE_REPORT", "Create waste report", "CITIZEN");
+            Permission viewOwnReports = createPermissionIfNotFound(permissionRepository, "VIEW_OWN_REPORTS", "View own waste reports", "CITIZEN");
+            
+            Permission viewAreaReports = createPermissionIfNotFound(permissionRepository, "VIEW_AREA_REPORTS", "View reports in assigned area", "ENTERPRISE");
+            Permission assignCollector = createPermissionIfNotFound(permissionRepository, "ASSIGN_COLLECTOR", "Assign collector to report", "ENTERPRISE");
+            
+            Permission viewTasks = createPermissionIfNotFound(permissionRepository, "VIEW_ASSIGNED_TASKS", "View assigned collection tasks", "COLLECTOR");
+            Permission updateStatus = createPermissionIfNotFound(permissionRepository, "UPDATE_TASK_STATUS", "Update task collection status", "COLLECTOR");
+
+            // 2. Seed Roles
             Role citizenRole = createRoleIfNotFound(roleRepository, "CITIZEN", "Citizen User");
             Role enterpriseRole = createRoleIfNotFound(roleRepository, "ENTERPRISE", "Recycling Enterprise");
             Role collectorRole = createRoleIfNotFound(roleRepository, "COLLECTOR", "Waste Collector");
             Role entAdminRole = createRoleIfNotFound(roleRepository, "ENTERPRISE_ADMIN", "Enterprise Administrator");
             Role adminRole = createRoleIfNotFound(roleRepository, "ADMIN", "System Admin");
+
+            // 3. Link Roles and Permissions
+            assignPermissionToRole(rolePermissionRepository, citizenRole, createReport);
+            assignPermissionToRole(rolePermissionRepository, citizenRole, viewOwnReports);
             
+            assignPermissionToRole(rolePermissionRepository, enterpriseRole, viewAreaReports);
+            assignPermissionToRole(rolePermissionRepository, entAdminRole, viewAreaReports);
+            assignPermissionToRole(rolePermissionRepository, entAdminRole, assignCollector);
+            
+            assignPermissionToRole(rolePermissionRepository, collectorRole, viewTasks);
+            assignPermissionToRole(rolePermissionRepository, collectorRole, updateStatus);
+
+            // 4. Seed Users
             createUserIfNotFound(userRepository, passwordEncoder, "citizen@test.com", "citizen123", "Test Citizen", citizenRole);
             createUserIfNotFound(userRepository, passwordEncoder, "enterprise@test.com", "enterprise123", "Test Enterprise", enterpriseRole);
             createUserIfNotFound(userRepository, passwordEncoder, "collector@test.com", "collector123", "Test Collector", collectorRole);
             createUserIfNotFound(userRepository, passwordEncoder, "admin@test.com", "admin123", "Test Admin", adminRole);
         };
+    }
+
+    private Permission createPermissionIfNotFound(PermissionRepository repo, String code, String name, String module) {
+        return repo.findByPermissionCode(code).orElseGet(() -> {
+            Permission p = Permission.builder()
+                    .permissionCode(code)
+                    .permissionName(name)
+                    .module(module)
+                    .build();
+            return repo.save(p);
+        });
+    }
+
+    private void assignPermissionToRole(RolePermissionRepository repo, Role role, Permission permission) {
+        if (!repo.existsByRoleAndPermission(role, permission)) {
+            repo.save(RolePermission.builder()
+                    .role(role)
+                    .permission(permission)
+                    .build());
+        }
     }
 
     private Role createRoleIfNotFound(RoleRepository roleRepository, String code, String name) {
