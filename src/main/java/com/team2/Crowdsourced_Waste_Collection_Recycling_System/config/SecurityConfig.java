@@ -26,6 +26,14 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+/**
+ * Cấu hình Spring Security (Spring Security 6) cho hệ thống.
+ *
+ * - Cho phép một số endpoint công khai (đăng nhập/đăng ký/Swagger...).
+ * - Các request còn lại bắt buộc phải có JWT hợp lệ (stateless).
+ * - Xác thực JWT thông qua cơ chế OAuth2 Resource Server.
+ * - Tùy biến cách map claim "scope" trong JWT sang authorities của Spring Security.
+ */
 public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
         "/api/auth/login", "/api/auth/register", "/api/auth/introspect", "/api/auth/logout", "/api/auth/refresh", "/api/auth/token",
@@ -52,29 +60,32 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity
-                .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(request -> request
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers("/api/citizen/**").hasRole("CITIZEN")
-                        .requestMatchers("/api/collector/**").hasRole("COLLECTOR")
-                        .requestMatchers("/api/enterprise/**").hasAnyRole("ENTERPRISE", "ENTERPRISE_ADMIN")
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated());
+        // Quy tắc phân quyền theo URL:
+        // - PUBLIC_ENDPOINTS: không cần xác thực
+        // - các endpoint khác: yêu cầu đã xác thực (authenticated)
+        httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
+                .permitAll()
+                .anyRequest()
+                .authenticated());
 
+        // Cấu hình OAuth2 Resource Server để Spring tự xử lý:
+        // - đọc token từ Authorization: Bearer <jwt>
+        // - decode/verify JWT
+        // - tạo Authentication và đưa vào SecurityContext
         httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
                         .decoder(customJwtDecoder)
                         .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
 
+        // Tắt CSRF vì hệ thống stateless (không dùng session/cookie cho auth)
+        httpSecurity.csrf(AbstractHttpConfigurer::disable);
+
         return httpSecurity.build();
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
+    public CorsFilter corsFilter() {
+        // CORS: cho phép frontend gọi API (hiện đang mở toàn bộ origin/method/header)
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
         List<String> origins = List.of(corsAllowedOrigins.split("\\s*,\\s*"));
@@ -91,6 +102,9 @@ public class SecurityConfig {
 
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
+        // Mặc định JwtGrantedAuthoritiesConverter sẽ prefix "SCOPE_".
+        // Ở dự án này, claim "scope" đã chứa sẵn "ROLE_..." và/hoặc permission code,
+        // nên bỏ prefix để dùng trực tiếp trong @PreAuthorize.
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
 
@@ -102,6 +116,7 @@ public class SecurityConfig {
 
     @Bean
     PasswordEncoder passwordEncoder() {
+        // Password hashing bằng BCrypt (strength = 10)
         return new BCryptPasswordEncoder(10);
     }
 

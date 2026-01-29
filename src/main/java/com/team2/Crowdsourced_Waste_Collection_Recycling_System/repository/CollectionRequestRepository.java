@@ -8,7 +8,7 @@ import java.util.List;
 
 @Repository
 public interface CollectionRequestRepository extends JpaRepository<CollectionRequest, Integer> {
-    List<CollectionRequest> findByCollectorId(Integer collectorId);
-    List<CollectionRequest> findByEnterpriseId(Integer enterpriseId);
+    List<CollectionRequest> findByCollector_Id(Integer collectorId);
+    List<CollectionRequest> findByEnterprise_Id(Integer enterpriseId);
     List<CollectionRequest> findByStatus(String status);
 }

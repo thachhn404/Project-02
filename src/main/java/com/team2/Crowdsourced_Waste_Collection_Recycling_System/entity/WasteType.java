@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class WasteType {
   
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
     @Column(name = "code", unique = true, nullable = false, length = 20)
@@ -42,15 +42,4 @@ public class WasteType {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        if (basePoints == null) {
-            basePoints = 0;
-        }
-        if (isRecyclable == null) {
-            isRecyclable = true;
-        }
-    }
 }

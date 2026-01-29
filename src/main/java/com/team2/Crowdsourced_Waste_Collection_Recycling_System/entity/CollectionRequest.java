@@ -1,7 +1,20 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+// mapped from table collection_requests
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,57 +25,61 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class CollectionRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "waste_report_id", unique = true, nullable = false)
-    private WasteReport wasteReport;
+    @Column(name = "request_code", nullable = false, unique = true, length = 20)
+    private String requestCode;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "collector_id")
-    private Collector collector;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "report_id", nullable = false)
+    private WasteReport report;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "enterprise_id", nullable = false)
     private RecyclingEnterprise enterprise;
 
-    @Column(nullable = false, length = 20)
-    private String status; // ASSIGNED, COLLECTING, COMPLETED, CANCELLED
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collector_id")
+    private Collector collector;
 
-    @Column(name = "actual_weight", precision = 10, scale = 2)
-    private BigDecimal actualWeight;
+    @Column(name = "status", length = 20)
+    private String status;
 
-    @Column(name = "points_awarded")
-    private Integer pointsAwarded;
+    @Column(name = "priority", length = 20)
+    private String priority;
 
-    @Column(name = "collection_time")
-    private LocalDateTime collectionTime;
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
+    @Column(name = "estimated_arrival")
+    private LocalDateTime estimatedArrival;
+
+    @Column(name = "actual_weight_kg", precision = 10, scale = 2)
+    private BigDecimal actualWeightKg;
+
+    @Lob
+    @Column(name = "collection_images", columnDefinition = "NVARCHAR(MAX)")
+    private String collectionImages;
+
+    @Column(name = "collected_at")
+    private LocalDateTime collectedAt;
+
+    @Column(name = "collection_note", length = 500)
+    private String collectionNote;
+
+    @Column(name = "distance_km", precision = 10, scale = 2)
+    private BigDecimal distanceKm;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    void prePersist() {
-        if (status == null) {
-            status = "ASSIGNED";
-        }
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = createdAt;
-        }
-    }
-
-    @PreUpdate
-    void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

@@ -1,6 +1,6 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
-// mapped from table feedback_responses
+// mapped from table system_settings
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -19,37 +19,38 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "feedback_responses")
+@Table(name = "system_settings")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FeedbackResponse {
+public class SystemSetting {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "feedback_id", nullable = false)
-    private Feedback feedback;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "responder_id", nullable = false)
-    private User responder;
+    @Column(name = "setting_key", nullable = false, unique = true, length = 100)
+    private String settingKey;
 
     @Lob
-    @Column(name = "response", nullable = false, columnDefinition = "NVARCHAR(MAX)")
-    private String response;
+    @Column(name = "setting_value", columnDefinition = "NVARCHAR(MAX)")
+    private String settingValue;
 
-    @Column(name = "is_internal")
-    private Boolean isInternal;
+    @Column(name = "data_type", length = 20)
+    private String dataType;
 
-    @Lob
-    @Column(name = "attachments", columnDefinition = "NVARCHAR(MAX)")
-    private String attachments;
+    @Column(name = "category", length = 50)
+    private String category;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "description", length = 500)
+    private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private User updatedBy;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }
 

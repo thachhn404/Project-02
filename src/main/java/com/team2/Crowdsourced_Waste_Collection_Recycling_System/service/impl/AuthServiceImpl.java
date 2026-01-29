@@ -43,6 +43,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+/**
+ * Hiện thực các nghiệp vụ xác thực/ủy quyền dựa trên JWT (Nimbus JOSE + JWT).
+ *
+ * Cách hoạt động tổng quát:
+ * - Đăng nhập: kiểm tra email/password, sau đó phát hành JWT (HS512) chứa claim "scope".
+ * - Logout/Refresh: thu hồi token cũ bằng cách lưu jti vào bảng invalidated_tokens.
+ * - Introspect: kiểm tra token hợp lệ + chưa bị thu hồi (CustomJwtDecoder gọi để quyết định cho phép truy cập).
+ */
 public class AuthServiceImpl implements AuthService {
     UserRepository userRepository;
     RoleRepository roleRepository;
@@ -64,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
+        // Validate dữ liệu đầu vào và tạo user mới, sau đó đăng nhập để trả token.
         String email = request.getEmail();
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email không được để trống");
@@ -80,7 +89,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Mặc định gán role CITIZEN nếu không chỉ định
         String roleCode = (request.getRoleCode() == null || request.getRoleCode().isBlank()) ? "CITIZEN" : request.getRoleCode();
-        Role role = roleRepository.findByRoleCode(roleCode)
+        Role role = roleRepository.findByRoleCodeIgnoreCase(roleCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quyền (Role) không tồn tại"));
 
         User u = new User();
@@ -101,6 +110,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public AuthenticationResponse login(AuthenticationRequest request) {
+        // Xác thực bằng email/password, nếu đúng thì phát hành JWT.
         var user = userRepository
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -116,6 +126,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
+        // Logout = thu hồi token bằng cách lưu JWT ID (jti) vào invalidated_tokens.
         try {
             var signToken = verifyToken(request.getToken(), true);
 
@@ -135,6 +146,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+        // Refresh: kiểm tra token (theo cửa sổ refreshable), thu hồi token cũ, rồi cấp token mới.
         var signedJWT = verifyToken(request.getToken(), true);
 
         var jit = signedJWT.getJWTClaimsSet().getJWTID();
@@ -157,6 +169,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
+        // Introspect chỉ trả true/false để phía Resource Server quyết định có chấp nhận token.
         var token = request.getToken();
         boolean isValid = true;
 
@@ -170,6 +183,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String generateToken(User user) {
+        // Tạo JWT ký bằng HS512; claim "scope" chứa role + permissions để map sang authorities.
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
@@ -196,6 +210,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
+        // Verify chữ ký + kiểm tra hạn token (exp hoặc refreshable window) + kiểm tra token đã bị thu hồi (jti).
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
@@ -220,10 +235,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String buildScope(User user) {
+        // Ghép scope theo định dạng "ROLE_X PERMISSION_Y ..." (phân tách bằng khoảng trắng).
         StringJoiner stringJoiner = new StringJoiner(" ");
 
         if (user.getRole() != null) {
-            stringJoiner.add("ROLE_" + user.getRole().getRoleCode());
+            stringJoiner.add("ROLE_" + user.getRole().getRoleCode().toUpperCase());
             if (!CollectionUtils.isEmpty(user.getRole().getRolePermissions())) {
                 user.getRole().getRolePermissions().forEach(rolePermission -> {
                     stringJoiner.add(rolePermission.getPermission().getPermissionCode());

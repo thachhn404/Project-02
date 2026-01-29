@@ -1,5 +1,6 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table permissions
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,10 +15,10 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Permission {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
     @Column(name = "permission_code", nullable = false, unique = true, length = 100)

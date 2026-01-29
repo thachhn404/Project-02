@@ -1,5 +1,6 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table enterprise_service_areas
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -8,7 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.*;
 
@@ -21,10 +21,10 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class EnterpriseServiceArea {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -51,20 +51,4 @@ public class EnterpriseServiceArea {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @PrePersist
-    void prePersist() {
-        if (priorityScore == null) {
-            priorityScore = 5;
-        }
-        if (maxDistanceKm == null) {
-            maxDistanceKm = BigDecimal.valueOf(10);
-        }
-        if (isActive == null) {
-            isActive = true;
-        }
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }
