@@ -62,6 +62,7 @@ public class AuthControllerWebMvcTest {
     @Test
     void logout_returns_204() throws Exception {
         mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer dummy-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNoContent());
