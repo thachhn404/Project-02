@@ -9,6 +9,14 @@ import java.util.Date;
 
 @Entity
 @Table(name = "invalidated_tokens")
+/**
+ * Bảng lưu token đã bị thu hồi (denylist).
+ *
+ * - id: JWT ID (jti) của token
+ * - expiryTime: thời điểm hết hạn để có thể dọn dữ liệu theo TTL
+ *
+ * Token sẽ bị coi là không hợp lệ nếu jti tồn tại trong bảng này.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
