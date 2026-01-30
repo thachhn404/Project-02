@@ -13,8 +13,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.HashSet;
-
 @Configuration
 public class DataSeeder {
 
@@ -64,21 +62,20 @@ public class DataSeeder {
 
     private Permission createPermissionIfNotFound(PermissionRepository repo, String code, String name, String module) {
         return repo.findByPermissionCode(code).orElseGet(() -> {
-            Permission p = Permission.builder()
-                    .permissionCode(code)
-                    .permissionName(name)
-                    .module(module)
-                    .build();
+            Permission p = new Permission();
+            p.setPermissionCode(code);
+            p.setPermissionName(name);
+            p.setModule(module);
             return repo.save(p);
         });
     }
 
     private void assignPermissionToRole(RolePermissionRepository repo, Role role, Permission permission) {
         if (!repo.existsByRoleAndPermission(role, permission)) {
-            repo.save(RolePermission.builder()
-                    .role(role)
-                    .permission(permission)
-                    .build());
+            RolePermission rolePermission = new RolePermission();
+            rolePermission.setRole(role);
+            rolePermission.setPermission(permission);
+            repo.save(rolePermission);
         }
     }
 
