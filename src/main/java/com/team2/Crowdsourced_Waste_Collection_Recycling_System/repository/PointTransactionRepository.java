@@ -1,9 +1,10 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository;
+
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.PointTransaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.PointTransaction;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,7 +18,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     
     List<PointTransaction> findByCollectionRequestId(Integer collectionRequestId);
     
-    List<PointTransaction> findByWasteReportId(Integer wasteReportId);
+    List<PointTransaction> findByReportId(Integer reportId);
     
     @Query("SELECT pt FROM PointTransaction pt WHERE pt.citizen.id = :citizenId ORDER BY pt.createdAt DESC")
     List<PointTransaction> findByCitizenIdOrderByCreatedAtDesc(@Param("citizenId") Integer citizenId);
@@ -44,8 +45,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
         @Param("type") String type
     );
     
-    @Query("SELECT pt FROM PointTransaction pt WHERE pt.citizen.id = :citizenId ORDER BY pt.createdAt DESC LIMIT 1")
-    PointTransaction findLatestTransactionByCitizenId(@Param("citizenId") Integer citizenId);
+    PointTransaction findTopByCitizenIdOrderByCreatedAtDesc(Integer citizenId);
     
     @Query("SELECT COUNT(pt) FROM PointTransaction pt WHERE pt.citizen.id = :citizenId AND pt.createdAt BETWEEN :startDate AND :endDate")
     Long countTransactionsByCitizenIdAndDateRange(
@@ -54,7 +54,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
         @Param("endDate") LocalDateTime endDate
     );
     
-    @Query("SELECT pt FROM PointTransaction pt WHERE pt.pointRule.id = :ruleId")
+    @Query("SELECT pt FROM PointTransaction pt WHERE pt.rule.id = :ruleId")
     List<PointTransaction> findByPointRuleId(@Param("ruleId") Integer ruleId);
 }
 
