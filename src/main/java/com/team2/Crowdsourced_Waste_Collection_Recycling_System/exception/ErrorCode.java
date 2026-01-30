@@ -16,6 +16,10 @@ public enum ErrorCode {
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
+    WASTE_TYPE_NOT_FOUND(1009, "Waste type not found", HttpStatus.BAD_REQUEST),
+    DAILY_REPORT_LIMIT_EXCEEDED(1010, "Daily report limit exceeded (5 reports/day)", HttpStatus.TOO_MANY_REQUESTS),
+    CITIZEN_NOT_FOUND(1011, "Citizen profile not found", HttpStatus.NOT_FOUND),
+    IMAGE_UPLOAD_FAILED(1012, "Failed to upload image", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

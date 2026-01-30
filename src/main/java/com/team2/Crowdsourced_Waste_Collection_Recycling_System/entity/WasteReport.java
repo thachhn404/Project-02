@@ -31,7 +31,7 @@ public class WasteReport {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @Column(name = "report_code", nullable = false, unique = true, length = 20)
+    @Column(name = "report_code", nullable = false, unique = true, length = 50)
     private String reportCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
