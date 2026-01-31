@@ -168,8 +168,6 @@ CREATE TABLE waste_reports (
     district NVARCHAR(100),
     city NVARCHAR(100),
     images NVARCHAR(MAX),
-    ai_suggested_type_id INT FOREIGN KEY REFERENCES waste_types(id),
-    ai_confidence DECIMAL(5,2),
     status NVARCHAR(20) DEFAULT 'pending',
     is_valid BIT NULL,
     validation_note NVARCHAR(500),

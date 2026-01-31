@@ -70,13 +70,6 @@ public class WasteReport {
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ai_suggested_type_id")
-    private WasteType aiSuggestedType;
-
-    @Column(name = "ai_confidence", precision = 5, scale = 2)
-    private BigDecimal aiConfidence;
-
     @Column(name = "status", length = 20)
     private String status;
 
