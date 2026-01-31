@@ -79,7 +79,7 @@ CREATE TABLE users (
     phone NVARCHAR(20),
     avatar_url NVARCHAR(500),
     role_id INT NOT NULL FOREIGN KEY REFERENCES roles(id),
-    enterprise_id INT NULL FOREIGN KEY REFERENCES enterprise(id),
+    enterprise_id INT NULL UNIQUE FOREIGN KEY REFERENCES enterprise(id),
     status NVARCHAR(20) DEFAULT 'active',
     last_login DATETIME2,
     created_at DATETIME2 DEFAULT GETDATE(),
@@ -93,6 +93,9 @@ CREATE TABLE users (
 CREATE TABLE citizens (
     id INT PRIMARY KEY IDENTITY(1,1),
     user_id INT UNIQUE NOT NULL FOREIGN KEY REFERENCES users(id) ON DELETE CASCADE,
+    email NVARCHAR(255),
+    full_name NVARCHAR(255),
+    password_hash NVARCHAR(255),
     address NVARCHAR(500),
     phone NVARCHAR(20),
     ward NVARCHAR(100),
@@ -418,6 +421,15 @@ INSERT INTO citizens (user_id, address, ward, city, total_points, total_reports,
 (9, N'78 Hai Bà Trưng', N'Phường Tân Định', N'TP.HCM', 95, 8, 7),
 (10, N'100 Điện Biên Phủ', N'Phường 15', N'TP.HCM', 320, 30, 28),
 (11, N'200 Nguyễn Thị Minh Khai', N'Phường 6', N'TP.HCM', 180, 15, 14);
+
+UPDATE c
+SET
+    c.email = u.email,
+    c.full_name = u.full_name,
+    c.password_hash = u.password_hash,
+    c.phone = COALESCE(c.phone, u.phone)
+FROM citizens c
+JOIN users u ON u.id = c.user_id;
 
 -- 12. WASTE REPORTS
 INSERT INTO waste_reports (report_code, citizen_id, waste_type_id, description, estimated_weight_kg, latitude, longitude, address, ward, city, images, status, is_valid, points_awarded, quality_rating, created_at) VALUES

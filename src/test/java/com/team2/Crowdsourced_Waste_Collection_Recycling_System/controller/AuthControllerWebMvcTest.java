@@ -41,7 +41,7 @@ public class AuthControllerWebMvcTest {
 
     @Test
     void login_returns_200() throws Exception {
-        when(authService.login(any())).thenReturn(new AuthenticationResponse("token", true));
+        when(authService.login(any())).thenReturn(new AuthenticationResponse("token", true, null));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +51,7 @@ public class AuthControllerWebMvcTest {
 
     @Test
     void register_returns_200() throws Exception {
-        when(authService.register(any())).thenReturn(new AuthenticationResponse("token", true));
+        when(authService.register(any())).thenReturn(new AuthenticationResponse("token", true, null));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,6 +65,14 @@ public class AuthControllerWebMvcTest {
                         .header("Authorization", "Bearer dummy-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void logout_accepts_body_token_returns_204() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"dummy-token\"}"))
                 .andExpect(status().isNoContent());
     }
 }

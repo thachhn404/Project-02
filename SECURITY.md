@@ -34,7 +34,6 @@
     - `generateToken`: Tạo JWT sử dụng thuật toán HS512, chứa các thông tin như `sub` (email), `iss` (issuer), `iat` (issue time), `exp` (expiry time), `jti` (JWT ID), và `scope` (danh sách Roles & Permissions).
     - `introspect`: Kiểm tra Token có còn hiệu lực và chưa bị thu hồi (không nằm trong bảng `invalidated_tokens`).
     - `logout`: Thu hồi Token bằng cách lưu `jti` vào bảng `invalidated_tokens`.
-    - `refreshToken`: Cấp mới Access Token dựa trên Token cũ còn hiệu lực (trong thời gian refreshable).
 
 ## Phân quyền (Authorization)
 - **Quy tắc**:
@@ -52,7 +51,6 @@
 jwt:
   signerKey: "chuỗi-bí-mật-độ-dài-tối-thiểu-32-byte"
   valid-duration: 3600 # Thời gian hiệu lực token (giây)
-  refreshable-duration: 36000 # Thời gian tối đa có thể refresh (giây)
 ```
 
 ## Các API Bảo mật chính
@@ -60,7 +58,6 @@ jwt:
 - `POST /api/auth/login`: Đăng nhập (Sử dụng LoginRequest, trả về ApiResponse).
 - `POST /api/auth/register`: Đăng ký tài khoản mới (trả về ApiResponse).
 - `POST /api/auth/introspect`: Kiểm tra trạng thái Token (trả về ApiResponse).
-- `POST /api/auth/refresh`: Làm mới Token (trả về ApiResponse).
 - `POST /api/auth/logout`: Đăng xuất (vô hiệu hóa Token).
 
 ## Vai trò trong hệ thống (Roles)
