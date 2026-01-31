@@ -1,7 +1,12 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
-// mapped from table recycling_enterprises
-import jakarta.persistence.*;
+// mapped from table enterprise
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,12 +16,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "recycling_enterprises")
+@Table(name = "enterprise")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecyclingEnterprise {
+public class Enterprise {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -52,3 +57,4 @@ public class RecyclingEnterprise {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
+

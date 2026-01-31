@@ -70,7 +70,6 @@ CREATE TABLE citizens (
     user_id INT UNIQUE NOT NULL FOREIGN KEY REFERENCES users(id) ON DELETE CASCADE,
     address NVARCHAR(500),
     ward NVARCHAR(100),
-    district NVARCHAR(100),
     city NVARCHAR(100),
     total_points INT DEFAULT 0,
     total_reports INT DEFAULT 0,
@@ -78,10 +77,10 @@ CREATE TABLE citizens (
 );
 
 -- ============================================
--- 4. RECYCLING ENTERPRISES
+-- 4. ENTERPRISE
 -- ============================================
 
-CREATE TABLE recycling_enterprises (
+CREATE TABLE enterprise (
     id INT PRIMARY KEY IDENTITY(1,1),
     name NVARCHAR(255) NOT NULL,
     address NVARCHAR(500),
@@ -93,15 +92,6 @@ CREATE TABLE recycling_enterprises (
     total_collected_weight DECIMAL(12,2) DEFAULT 0,
     created_at DATETIME2 DEFAULT GETDATE(),
     updated_at DATETIME2 DEFAULT GETDATE()
-);
-
-CREATE TABLE enterprise_admins (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    user_id INT UNIQUE NOT NULL FOREIGN KEY REFERENCES users(id) ON DELETE CASCADE,
-    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES recycling_enterprises(id),
-    position NVARCHAR(100),
-    is_owner BIT DEFAULT 0,
-    created_at DATETIME2 DEFAULT GETDATE()
 );
 
 -- ============================================
@@ -122,35 +112,6 @@ CREATE TABLE waste_types (
 );
 
 -- ============================================
--- 6. ENTERPRISE CAPACITY & SERVICE AREAS
--- ============================================
-
-CREATE TABLE enterprise_waste_capacity (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES recycling_enterprises(id),
-    waste_type_id INT NOT NULL FOREIGN KEY REFERENCES waste_types(id),
-    daily_capacity_kg DECIMAL(10,2) NOT NULL,
-    current_load_kg DECIMAL(10,2) DEFAULT 0,
-    price_per_kg DECIMAL(10,2),
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETDATE(),
-    updated_at DATETIME2 DEFAULT GETDATE(),
-    CONSTRAINT uq_enterprise_waste UNIQUE (enterprise_id, waste_type_id)
-);
-
-CREATE TABLE enterprise_service_areas (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES recycling_enterprises(id),
-    city NVARCHAR(100) NOT NULL,
-    district NVARCHAR(100) NOT NULL,
-    ward NVARCHAR(100),
-    priority_score INT DEFAULT 5,
-    max_distance_km DECIMAL(5,2) DEFAULT 10,
-    is_active BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETDATE()
-);
-
--- ============================================
 -- 7. WASTE REPORTS
 -- ============================================
 
@@ -165,11 +126,8 @@ CREATE TABLE waste_reports (
     longitude DECIMAL(11,8) NOT NULL,
     address NVARCHAR(500),
     ward NVARCHAR(100),
-    district NVARCHAR(100),
     city NVARCHAR(100),
     images NVARCHAR(MAX),
-    ai_suggested_type_id INT FOREIGN KEY REFERENCES waste_types(id),
-    ai_confidence DECIMAL(5,2),
     status NVARCHAR(20) DEFAULT 'pending',
     is_valid BIT NULL,
     validation_note NVARCHAR(500),
@@ -196,7 +154,7 @@ CREATE TABLE report_images (
 CREATE TABLE collectors (
     id INT PRIMARY KEY IDENTITY(1,1),
     user_id INT UNIQUE NOT NULL FOREIGN KEY REFERENCES users(id) ON DELETE CASCADE,
-    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES recycling_enterprises(id),
+    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES enterprise(id),
     employee_code NVARCHAR(50),
     vehicle_type NVARCHAR(50),
     vehicle_plate NVARCHAR(20),
@@ -218,7 +176,7 @@ CREATE TABLE collection_requests (
     id INT PRIMARY KEY IDENTITY(1,1),
     request_code NVARCHAR(20) UNIQUE NOT NULL,
     report_id INT NOT NULL FOREIGN KEY REFERENCES waste_reports(id),
-    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES recycling_enterprises(id),
+    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES enterprise(id),
     collector_id INT FOREIGN KEY REFERENCES collectors(id),
     status NVARCHAR(20) DEFAULT 'pending',
     priority NVARCHAR(20) DEFAULT 'normal',
@@ -256,7 +214,7 @@ CREATE TABLE collection_tracking (
 
 CREATE TABLE point_rules (
     id INT PRIMARY KEY IDENTITY(1,1),
-    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES recycling_enterprises(id),
+    enterprise_id INT NOT NULL FOREIGN KEY REFERENCES enterprise(id),
     rule_name NVARCHAR(255) NOT NULL,
     rule_type NVARCHAR(30) NOT NULL,
     waste_type_id INT FOREIGN KEY REFERENCES waste_types(id),
@@ -300,7 +258,6 @@ CREATE TABLE leaderboard (
     id INT PRIMARY KEY IDENTITY(1,1),
     citizen_id INT NOT NULL FOREIGN KEY REFERENCES citizens(id),
     ward NVARCHAR(100),
-    district NVARCHAR(100),
     city NVARCHAR(100),
     period_type NVARCHAR(20) NOT NULL,
     period_start DATE NOT NULL,
@@ -354,9 +311,8 @@ CREATE TABLE feedback_responses (
 CREATE TABLE collection_statistics (
     id INT PRIMARY KEY IDENTITY(1,1),
     stat_date DATE NOT NULL,
-    enterprise_id INT FOREIGN KEY REFERENCES recycling_enterprises(id),
+    enterprise_id INT FOREIGN KEY REFERENCES enterprise(id),
     waste_type_id INT NOT NULL FOREIGN KEY REFERENCES waste_types(id),
-    district NVARCHAR(100),
     city NVARCHAR(100),
     total_reports INT DEFAULT 0,
     total_collections INT DEFAULT 0,
@@ -445,8 +401,8 @@ INSERT INTO waste_types (code, name, description, category, base_points, is_recy
 ('ORGANIC', N'Hữu cơ', N'Rác thực phẩm, lá cây, rau quả', 'organic', 5, 0),
 ('HAZARDOUS', N'Nguy hại', N'Hóa chất, thuốc trừ sâu, pin lithium', 'hazardous', 0, 0);
 
--- 5. RECYCLING ENTERPRISES
-INSERT INTO recycling_enterprises (name, address, phone, email, license_number, tax_code) VALUES
+-- 5. ENTERPRISE
+INSERT INTO enterprise (name, address, phone, email, license_number, tax_code) VALUES
 (N'Công ty TNHH Tái chế Xanh', N'123 Nguyễn Văn Linh, Q.7, TP.HCM', '028-1234-5678', 'info@taichexanh.vn', 'GP-2024-001', '0312345678'),
 (N'Công ty CP Môi trường Sạch', N'456 Lê Văn Việt, Q.9, TP.HCM', '028-8765-4321', 'contact@moitruongsach.vn', 'GP-2024-002', '0387654321'),
 (N'Doanh nghiệp Tái chế Phương Nam', N'789 Điện Biên Phủ, Q.Bình Thạnh, TP.HCM', '028-5555-6666', 'phuongnam@recycle.vn', 'GP-2024-003', '0355556666');
@@ -470,11 +426,6 @@ INSERT INTO users (email, password_hash, full_name, phone, role_id, status) VALU
 ('citizen4@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Lý Văn Đức', '0900123456', 1, 'active'),
 ('citizen5@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Trịnh Thị Nga', '0911234567', 1, 'active');
 
--- 7. ENTERPRISE ADMINS
-INSERT INTO enterprise_admins (user_id, enterprise_id, position, is_owner) VALUES
-(2, 1, N'Giám đốc điều hành', 1),
-(3, 2, N'Quản lý vận hành', 1);
-
 -- 8. COLLECTORS
 INSERT INTO collectors (user_id, enterprise_id, employee_code, vehicle_type, vehicle_plate, status) VALUES
 (4, 1, 'COL-001', N'Xe tải nhỏ', '59C-12345', 'available'),
@@ -482,51 +433,22 @@ INSERT INTO collectors (user_id, enterprise_id, employee_code, vehicle_type, veh
 (6, 2, 'COL-003', N'Xe máy', '59P1-11111', 'available');
 
 -- 9. CITIZENS
-INSERT INTO citizens (user_id, address, ward, district, city, total_points, total_reports, valid_reports) VALUES
-(7, N'12 Nguyễn Huệ', N'Phường Bến Nghé', N'Quận 1', N'TP.HCM', 150, 12, 10),
-(8, N'45 Lê Lợi', N'Phường Bến Thành', N'Quận 1', N'TP.HCM', 280, 25, 22),
-(9, N'78 Hai Bà Trưng', N'Phường Tân Định', N'Quận 1', N'TP.HCM', 95, 8, 7),
-(10, N'100 Điện Biên Phủ', N'Phường 15', N'Quận Bình Thạnh', N'TP.HCM', 320, 30, 28),
-(11, N'200 Nguyễn Thị Minh Khai', N'Phường 6', N'Quận 3', N'TP.HCM', 180, 15, 14);
-
--- 10. ENTERPRISE WASTE CAPACITY
-INSERT INTO enterprise_waste_capacity (enterprise_id, waste_type_id, daily_capacity_kg, current_load_kg, price_per_kg, is_active) VALUES
--- Công ty Tái chế Xanh
-(1, 1, 5000, 1200, 5000, 1),   -- Nhựa
-(1, 2, 3000, 800, 3000, 1),    -- Giấy
-(1, 3, 2000, 500, 15000, 1),   -- Kim loại
-(1, 4, 1000, 200, 2000, 1),    -- Thủy tinh
--- Công ty Môi trường Sạch
-(2, 1, 4000, 900, 4800, 1),    -- Nhựa
-(2, 2, 2500, 600, 2800, 1),    -- Giấy
-(2, 5, 500, 100, 50000, 1),    -- Điện tử
--- Doanh nghiệp Phương Nam
-(3, 3, 3000, 700, 14000, 1),   -- Kim loại
-(3, 4, 2000, 400, 1800, 1);    -- Thủy tinh
-
--- 11. ENTERPRISE SERVICE AREAS
-INSERT INTO enterprise_service_areas (enterprise_id, city, district, ward, priority_score, max_distance_km, is_active) VALUES
--- Công ty Tái chế Xanh - Phục vụ Q.1, Q.3, Q.7
-(1, N'TP.HCM', N'Quận 1', NULL, 10, 15, 1),
-(1, N'TP.HCM', N'Quận 3', NULL, 8, 12, 1),
-(1, N'TP.HCM', N'Quận 7', NULL, 10, 10, 1),
--- Công ty Môi trường Sạch - Phục vụ Q.9, Q.Thủ Đức, Q.Bình Thạnh
-(2, N'TP.HCM', N'Quận 9', NULL, 10, 15, 1),
-(2, N'TP.HCM', N'Quận Thủ Đức', NULL, 9, 12, 1),
-(2, N'TP.HCM', N'Quận Bình Thạnh', NULL, 8, 10, 1),
--- Doanh nghiệp Phương Nam - Phục vụ Q.Bình Thạnh, Q.Phú Nhuận
-(3, N'TP.HCM', N'Quận Bình Thạnh', NULL, 10, 10, 1),
-(3, N'TP.HCM', N'Quận Phú Nhuận', NULL, 9, 8, 1);
+INSERT INTO citizens (user_id, address, ward, city, total_points, total_reports, valid_reports) VALUES
+(7, N'12 Nguyễn Huệ', N'Phường Bến Nghé', N'TP.HCM', 150, 12, 10),
+(8, N'45 Lê Lợi', N'Phường Bến Thành', N'TP.HCM', 280, 25, 22),
+(9, N'78 Hai Bà Trưng', N'Phường Tân Định', N'TP.HCM', 95, 8, 7),
+(10, N'100 Điện Biên Phủ', N'Phường 15', N'TP.HCM', 320, 30, 28),
+(11, N'200 Nguyễn Thị Minh Khai', N'Phường 6', N'TP.HCM', 180, 15, 14);
 
 -- 12. WASTE REPORTS
-INSERT INTO waste_reports (report_code, citizen_id, waste_type_id, description, estimated_weight_kg, latitude, longitude, address, ward, district, city, images, ai_suggested_type_id, ai_confidence, status, is_valid, points_awarded, quality_rating, created_at) VALUES
-('WR-20250115-001', 1, 1, N'Nhiều chai nhựa PET đã rửa sạch', 5.5, 10.7769, 106.7009, N'12 Nguyễn Huệ, Q.1', N'Phường Bến Nghé', N'Quận 1', N'TP.HCM', '["https://storage.example.com/img1.jpg"]', 1, 95.5, 'collected', 1, 55, 5, '2025-01-15 08:30:00'),
-('WR-20250115-002', 2, 2, N'Thùng carton và giấy báo cũ', 8.0, 10.7731, 106.6989, N'45 Lê Lợi, Q.1', N'Phường Bến Thành', N'Quận 1', N'TP.HCM', '["https://storage.example.com/img2.jpg"]', 2, 92.0, 'collected', 1, 64, 4, '2025-01-15 09:15:00'),
-('WR-20250115-003', 3, 3, N'Lon nhôm và sắt vụn', 3.2, 10.7856, 106.6912, N'78 Hai Bà Trưng, Q.1', N'Phường Tân Định', N'Quận 1', N'TP.HCM', '["https://storage.example.com/img3.jpg"]', 3, 88.5, 'assigned', 1, 0, NULL, '2025-01-15 10:00:00'),
-('WR-20250115-004', 4, 1, N'Chai nhựa HDPE từ nước giặt', 4.0, 10.8012, 106.7102, N'100 Điện Biên Phủ, Bình Thạnh', N'Phường 15', N'Quận Bình Thạnh', N'TP.HCM', '["https://storage.example.com/img4.jpg"]', 1, 90.0, 'accepted', 1, 0, NULL, '2025-01-15 11:30:00'),
-('WR-20250115-005', 5, 4, N'Chai lọ thủy tinh các loại', 6.5, 10.7823, 106.6845, N'200 Nguyễn Thị Minh Khai, Q.3', N'Phường 6', N'Quận 3', N'TP.HCM', '["https://storage.example.com/img5.jpg"]', 4, 94.2, 'pending', NULL, 0, NULL, '2025-01-15 14:00:00'),
-('WR-20250116-001', 1, 5, N'Điện thoại cũ và pin', 1.2, 10.7769, 106.7009, N'12 Nguyễn Huệ, Q.1', N'Phường Bến Nghé', N'Quận 1', N'TP.HCM', '["https://storage.example.com/img6.jpg"]', 5, 85.0, 'pending', NULL, 0, NULL, '2025-01-16 09:00:00'),
-('WR-20250116-002', 2, 1, N'Chai nhựa PP từ hộp sữa', 3.5, 10.7731, 106.6989, N'45 Lê Lợi, Q.1', N'Phường Bến Thành', N'Quận 1', N'TP.HCM', '["https://storage.example.com/img7.jpg"]', 1, 91.5, 'pending', NULL, 0, NULL, '2025-01-16 10:30:00');
+INSERT INTO waste_reports (report_code, citizen_id, waste_type_id, description, estimated_weight_kg, latitude, longitude, address, ward, city, images, status, is_valid, points_awarded, quality_rating, created_at) VALUES
+('WR-20250115-001', 1, 1, N'Nhiều chai nhựa PET đã rửa sạch', 5.5, 10.7769, 106.7009, N'12 Nguyễn Huệ, Q.1', N'Phường Bến Nghé', N'TP.HCM', '["https://storage.example.com/img1.jpg"]', 'collected', 1, 55, 5, '2025-01-15 08:30:00'),
+('WR-20250115-002', 2, 2, N'Thùng carton và giấy báo cũ', 8.0, 10.7731, 106.6989, N'45 Lê Lợi, Q.1', N'Phường Bến Thành', N'TP.HCM', '["https://storage.example.com/img2.jpg"]', 'collected', 1, 64, 4, '2025-01-15 09:15:00'),
+('WR-20250115-003', 3, 3, N'Lon nhôm và sắt vụn', 3.2, 10.7856, 106.6912, N'78 Hai Bà Trưng, Q.1', N'Phường Tân Định', N'TP.HCM', '["https://storage.example.com/img3.jpg"]', 'assigned', 1, 0, NULL, '2025-01-15 10:00:00'),
+('WR-20250115-004', 4, 1, N'Chai nhựa HDPE từ nước giặt', 4.0, 10.8012, 106.7102, N'100 Điện Biên Phủ, Bình Thạnh', N'Phường 15', N'TP.HCM', '["https://storage.example.com/img4.jpg"]', 'accepted', 1, 0, NULL, '2025-01-15 11:30:00'),
+('WR-20250115-005', 5, 4, N'Chai lọ thủy tinh các loại', 6.5, 10.7823, 106.6845, N'200 Nguyễn Thị Minh Khai, Q.3', N'Phường 6', N'TP.HCM', '["https://storage.example.com/img5.jpg"]', 'pending', NULL, 0, NULL, '2025-01-15 14:00:00'),
+('WR-20250116-001', 1, 5, N'Điện thoại cũ và pin', 1.2, 10.7769, 106.7009, N'12 Nguyễn Huệ, Q.1', N'Phường Bến Nghé', N'TP.HCM', '["https://storage.example.com/img6.jpg"]', 'pending', NULL, 0, NULL, '2025-01-16 09:00:00'),
+('WR-20250116-002', 2, 1, N'Chai nhựa PP từ hộp sữa', 3.5, 10.7731, 106.6989, N'45 Lê Lợi, Q.1', N'Phường Bến Thành', N'TP.HCM', '["https://storage.example.com/img7.jpg"]', 'pending', NULL, 0, NULL, '2025-01-16 10:30:00');
 
 -- 13. COLLECTION REQUESTS
 INSERT INTO collection_requests (request_code, report_id, enterprise_id, collector_id, status, priority, assigned_at, estimated_arrival, actual_weight_kg, collected_at, distance_km, created_at) VALUES
@@ -571,12 +493,12 @@ INSERT INTO point_transactions (citizen_id, report_id, collection_request_id, ru
 (4, NULL, NULL, NULL, 50, 'bonus', N'Bonus người dùng mới', 320, '2025-01-10 10:00:00');
 
 -- 17. LEADERBOARD
-INSERT INTO leaderboard (citizen_id, ward, district, city, period_type, period_start, period_end, total_points, total_reports, valid_reports, total_weight_kg, rank_position) VALUES
-(4, N'Phường 15', N'Quận Bình Thạnh', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 320, 30, 28, 125.5, 1),
-(2, N'Phường Bến Thành', N'Quận 1', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 280, 25, 22, 98.2, 2),
-(5, N'Phường 6', N'Quận 3', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 180, 15, 14, 65.0, 3),
-(1, N'Phường Bến Nghé', N'Quận 1', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 150, 12, 10, 52.3, 4),
-(3, N'Phường Tân Định', N'Quận 1', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 95, 8, 7, 35.8, 5);
+INSERT INTO leaderboard (citizen_id, ward, city, period_type, period_start, period_end, total_points, total_reports, valid_reports, total_weight_kg, rank_position) VALUES
+(4, N'Phường 15', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 320, 30, 28, 125.5, 1),
+(2, N'Phường Bến Thành', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 280, 25, 22, 98.2, 2),
+(5, N'Phường 6', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 180, 15, 14, 65.0, 3),
+(1, N'Phường Bến Nghé', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 150, 12, 10, 52.3, 4),
+(3, N'Phường Tân Định', N'TP.HCM', 'monthly', '2025-01-01', '2025-01-31', 95, 8, 7, 35.8, 5);
 
 -- 18. FEEDBACKS
 INSERT INTO feedbacks (feedback_code, citizen_id, collection_request_id, feedback_type, subject, content, severity, status, assigned_to, created_at) VALUES
@@ -591,13 +513,13 @@ INSERT INTO feedback_responses (feedback_id, responder_id, response, is_internal
 (2, 1, N'Lưu ý: Khu vực Q.1 đang quá tải, cần điều phối thêm collector.', 1, '2025-01-15 16:05:00');
 
 -- 20. COLLECTION STATISTICS
-INSERT INTO collection_statistics (stat_date, enterprise_id, waste_type_id, district, city, total_reports, total_collections, total_weight_kg, total_points_awarded, avg_collection_time_hours, success_rate) VALUES
-('2025-01-15', 1, 1, N'Quận 1', N'TP.HCM', 5, 4, 25.5, 180, 2.5, 95.00),
-('2025-01-15', 1, 2, N'Quận 1', N'TP.HCM', 3, 3, 18.2, 120, 2.0, 100.00),
-('2025-01-15', 1, 3, N'Quận 1', N'TP.HCM', 2, 1, 8.5, 75, 3.0, 85.00),
-('2025-01-15', 2, 1, N'Quận Bình Thạnh', N'TP.HCM', 4, 3, 15.8, 95, 2.8, 90.00),
-('2025-01-14', 1, 1, N'Quận 1', N'TP.HCM', 6, 5, 30.2, 210, 2.3, 92.00),
-('2025-01-14', 1, 2, N'Quận 1', N'TP.HCM', 4, 4, 22.0, 145, 1.8, 100.00);
+INSERT INTO collection_statistics (stat_date, enterprise_id, waste_type_id, city, total_reports, total_collections, total_weight_kg, total_points_awarded, avg_collection_time_hours, success_rate) VALUES
+('2025-01-15', 1, 1, N'TP.HCM', 5, 4, 25.5, 180, 2.5, 95.00),
+('2025-01-15', 1, 2, N'TP.HCM', 3, 3, 18.2, 120, 2.0, 100.00),
+('2025-01-15', 1, 3, N'TP.HCM', 2, 1, 8.5, 75, 3.0, 85.00),
+('2025-01-15', 2, 1, N'TP.HCM', 4, 3, 15.8, 95, 2.8, 90.00),
+('2025-01-14', 1, 1, N'TP.HCM', 6, 5, 30.2, 210, 2.3, 92.00),
+('2025-01-14', 1, 2, N'TP.HCM', 4, 4, 22.0, 145, 1.8, 100.00);
 
 
 -- 22. SYSTEM SETTINGS
@@ -606,8 +528,6 @@ INSERT INTO system_settings (setting_key, setting_value, data_type, category, de
 ('collection_timeout_hours', '24', 'number', 'collection', N'Timeout cho yêu cầu thu gom (giờ)'),
 ('default_point_multiplier', '1.0', 'number', 'points', N'Hệ số nhân điểm mặc định'),
 ('max_distance_km', '10', 'number', 'collection', N'Khoảng cách tối đa cho thu gom (km)'),
-('enable_ai_classification', 'true', 'boolean', 'ai', N'Bật AI hỗ trợ phân loại rác'),
-('ai_min_confidence', '0.75', 'number', 'ai', N'Độ tin cậy tối thiểu của AI (0-1)'),
 ('leaderboard_min_reports', '5', 'number', 'points', N'Số báo cáo tối thiểu để lên bảng xếp hạng');
 
 

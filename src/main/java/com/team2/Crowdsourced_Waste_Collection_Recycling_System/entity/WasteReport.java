@@ -31,7 +31,7 @@ public class WasteReport {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @Column(name = "report_code", nullable = false, unique = true, length = 20)
+    @Column(name = "report_code", nullable = false, unique = true, length = 50)
     private String reportCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -60,9 +60,6 @@ public class WasteReport {
     @Column(name = "ward", length = 100)
     private String ward;
 
-    @Column(name = "district", length = 100)
-    private String district;
-
     @Column(name = "city", length = 100)
     private String city;
 
@@ -70,12 +67,6 @@ public class WasteReport {
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ai_suggested_type_id")
-    private WasteType aiSuggestedType;
-
-    @Column(name = "ai_confidence", precision = 5, scale = 2)
-    private BigDecimal aiConfidence;
 
     @Column(name = "status", length = 20)
     private String status;

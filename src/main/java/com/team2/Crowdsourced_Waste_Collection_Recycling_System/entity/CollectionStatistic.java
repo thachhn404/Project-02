@@ -36,14 +36,11 @@ public class CollectionStatistic {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enterprise_id")
-    private RecyclingEnterprise enterprise;
+    private Enterprise enterprise;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "waste_type_id", nullable = false)
     private WasteType wasteType;
-
-    @Column(name = "district", length = 100)
-    private String district;
 
     @Column(name = "city", length = 100)
     private String city;

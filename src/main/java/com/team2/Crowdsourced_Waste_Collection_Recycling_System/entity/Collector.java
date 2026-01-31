@@ -34,7 +34,7 @@ public class Collector {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "enterprise_id", nullable = false)
-    private RecyclingEnterprise enterprise;
+    private Enterprise enterprise;
 
     @Column(name = "employee_code", length = 50)
     private String employeeCode;
