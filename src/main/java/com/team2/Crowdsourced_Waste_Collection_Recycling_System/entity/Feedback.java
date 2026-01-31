@@ -79,6 +79,10 @@ public class Feedback {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    @Lob
+    @Column(name = "responses", columnDefinition = "NVARCHAR(MAX)")
+    private String responses;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

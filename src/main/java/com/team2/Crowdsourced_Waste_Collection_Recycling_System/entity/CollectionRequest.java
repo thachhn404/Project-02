@@ -40,7 +40,7 @@ public class CollectionRequest {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "enterprise_id", nullable = false)
-    private RecyclingEnterprise enterprise;
+    private Enterprise enterprise;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "collector_id")

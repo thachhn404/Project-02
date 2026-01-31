@@ -25,7 +25,6 @@ public class AuthResponse {
     // Citizen / Enterprise Location
     private String address;
     private String ward;
-    private String district;
     private String city;
     
     // Enterprise specific

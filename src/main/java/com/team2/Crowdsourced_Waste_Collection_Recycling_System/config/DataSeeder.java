@@ -1,25 +1,30 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.config;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Permission;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.RolePermission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CitizenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.PermissionRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RolePermissionRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.UserRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataSeeder {
 
     @Bean
     public CommandLineRunner initData(
             RoleRepository roleRepository,
             UserRepository userRepository,
+            CitizenRepository citizenRepository,
             PermissionRepository permissionRepository,
             RolePermissionRepository rolePermissionRepository,
             PasswordEncoder passwordEncoder) {
@@ -57,6 +62,8 @@ public class DataSeeder {
             createUserIfNotFound(userRepository, passwordEncoder, "enterprise@test.com", "enterprise123", "Test Enterprise", enterpriseRole);
             createUserIfNotFound(userRepository, passwordEncoder, "collector@test.com", "collector123", "Test Collector", collectorRole);
             createUserIfNotFound(userRepository, passwordEncoder, "admin@test.com", "admin123", "Test Admin", adminRole);
+
+            userRepository.findByEmail("citizen@test.com").ifPresent(user -> createCitizenIfNotFound(citizenRepository, user));
         };
     }
 
@@ -100,5 +107,24 @@ public class DataSeeder {
             userRepository.save(user);
             System.out.println("User " + email + " created with role " + role.getRoleCode());
         }
+    }
+
+    private void createCitizenIfNotFound(CitizenRepository citizenRepository, User user) {
+        if (user.getId() == null) {
+            return;
+        }
+        if (citizenRepository.findByUserId(user.getId()).isPresent()) {
+            return;
+        }
+        Citizen citizen = new Citizen();
+        citizen.setUser(user);
+        citizen.setEmail(user.getEmail());
+        citizen.setFullName(user.getFullName());
+        citizen.setPasswordHash(user.getPasswordHash());
+        citizen.setPhone(user.getPhone());
+        citizen.setTotalPoints(0);
+        citizen.setTotalReports(0);
+        citizen.setValidReports(0);
+        citizenRepository.save(citizen);
     }
 }

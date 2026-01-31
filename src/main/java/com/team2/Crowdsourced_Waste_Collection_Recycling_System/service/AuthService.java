@@ -18,7 +18,5 @@ public interface AuthService {
     
     void logout(LogoutRequest request) throws ParseException, JOSEException;
 
-    AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException;
-
     IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException;
 }
