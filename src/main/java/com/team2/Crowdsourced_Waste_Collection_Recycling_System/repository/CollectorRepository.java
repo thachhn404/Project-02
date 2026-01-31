@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface CollectorRepository extends JpaRepository<Collector, Integer> {
+    boolean existsByIdAndEnterpriseIdAndStatus(Integer id, Integer enterpriseId, String status);
+
     Optional<Collector> findByUserId(Integer userId);
 }

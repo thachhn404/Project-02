@@ -18,29 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CollectionController {
 
-    private final CollectionRequestRepository collectionRequestRepository;
 
-    /**
-     * Lấy danh sách các yêu cầu thu gom được giao cho Collector này.
-     */
-    @GetMapping("/my-tasks")
-    @PreAuthorize("hasRole('COLLECTOR')")
-    public ResponseEntity<List<CollectionRequest>> getMyTasks() {
-        // Trong thực tế sẽ lấy collectorId từ SecurityContext
-        return ResponseEntity.ok(collectionRequestRepository.findAll());
-    }
 
-    /**
-     * Cập nhật trạng thái thu gom (ví dụ: đang thu gom, đã hoàn thành).
-     */
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('COLLECTOR')")
-    public ResponseEntity<CollectionRequest> updateStatus(@PathVariable Integer id, @RequestParam String status) {
-        return collectionRequestRepository.findById(id)
-                .map(request -> {
-                    request.setStatus(status);
-                    return ResponseEntity.ok(collectionRequestRepository.save(request));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
+
 }
