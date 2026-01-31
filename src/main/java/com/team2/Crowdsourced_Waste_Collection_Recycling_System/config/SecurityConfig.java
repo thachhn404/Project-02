@@ -33,7 +33,7 @@ import java.util.List;
  */
 public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
-        "/api/auth/login", "/api/auth/register", "/api/auth/introspect", "/api/auth/logout", "/api/auth/refresh", "/api/auth/token",
+        "/api/auth/login", "/api/auth/register", "/api/auth/introspect", "/api/auth/logout", "/api/auth/token",
         "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-resources/**", "/webjars/**"
     };
 

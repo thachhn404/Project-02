@@ -20,7 +20,6 @@ server:
 jwt:
   signerKey: "72d6236b1a543277ad6973b2693a14ab13c437f8749b185a301f5034bbe3de36"
   valid-duration: 3600 # 1 hour in seconds
-  refreshable-duration: 36000 # 10 hours in seconds
 
 open:
   api:
@@ -37,4 +36,8 @@ springdoc:
   show-actuator: true
   default-produces-media-type: application/json
   writer-with-default-pretty-printer: true
+
+app:
+  seed:
+    enabled: false
 

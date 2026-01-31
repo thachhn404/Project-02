@@ -44,14 +44,6 @@ public class AuthController {
         return ApiResponse.<IntrospectResponse>builder().result(result).build();
     }
 
-    @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request)
-            throws ParseException, JOSEException {
-        // Cấp token mới dựa trên token hiện có (trong thời gian refreshable)
-        var result = authService.refreshToken(request);
-        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
-    }
-
     @PostMapping("/register")
     public ApiResponse<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
         // Đăng ký tài khoản và trả về token luôn để client đăng nhập ngay
@@ -69,12 +61,22 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) throws ParseException, JOSEException {
-        // Client gửi header Authorization: Bearer <token>
+    public ResponseEntity<Void> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @RequestBody(required = false) LogoutRequest request) {
+        String token = null;
+
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String token = authorizationHeader.substring(7);
-            authService.logout(LogoutRequest.builder().token(token).build());
+            token = authorizationHeader.substring(7).trim();
+        } else if (request != null && request.getToken() != null) {
+            token = request.getToken().trim();
         }
+
+        try {
+            authService.logout(LogoutRequest.builder().token(token).build());
+        } catch (Exception ignored) {
+        }
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -3,11 +3,13 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenticationResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.IntrospectResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.InvalidatedToken;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppException;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CitizenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.InvalidatedTokenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.UserRepository;
@@ -54,6 +56,7 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
     UserRepository userRepository;
     RoleRepository roleRepository;
+    CitizenRepository citizenRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
 
@@ -64,10 +67,6 @@ public class AuthServiceImpl implements AuthService {
     @NonFinal
     @Value("${jwt.valid-duration}")
     protected long VALID_DURATION;
-
-    @NonFinal
-    @Value("${jwt.refreshable-duration}")
-    protected long REFRESHABLE_DURATION;
 
     @Override
     @Transactional
@@ -99,7 +98,21 @@ public class AuthServiceImpl implements AuthService {
         u.setPhone(request.getPhone());
         u.setRole(role);
         u.setStatus("active");
-        userRepository.save(u);
+        User savedUser = userRepository.save(u);
+
+        if ("CITIZEN".equalsIgnoreCase(role.getRoleCode())) {
+            Citizen citizen = new Citizen();
+            citizen.setUser(savedUser);
+            citizen.setEmail(savedUser.getEmail());
+            citizen.setFullName(savedUser.getFullName());
+            citizen.setPasswordHash(savedUser.getPasswordHash());
+            citizen.setPhone(savedUser.getPhone());
+            citizen.setTotalPoints(0);
+            citizen.setTotalReports(0);
+            citizen.setValidReports(0);
+            citizenRepository.save(citizen);
+            citizenRepository.flush();
+        }
 
         return login(AuthenticationRequest.builder()
                 .email(request.getEmail())
@@ -121,14 +134,24 @@ public class AuthServiceImpl implements AuthService {
 
         var token = generateToken(user);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).build();
+        Integer citizenId = resolveCitizenId(user);
+        return AuthenticationResponse.builder()
+                .token(token)
+                .authenticated(true)
+                .citizenId(citizenId)
+                .build();
     }
 
     @Override
+    @Transactional
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
         // Logout = thu hồi token bằng cách lưu JWT ID (jti) vào invalidated_tokens.
         try {
-            var signToken = verifyToken(request.getToken(), true);
+            if (request == null || request.getToken() == null || request.getToken().isBlank()) {
+                SecurityContextHolder.clearContext();
+                return;
+            }
+            var signToken = verifyToken(request.getToken());
 
             String jit = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
@@ -137,34 +160,10 @@ public class AuthServiceImpl implements AuthService {
                     InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
+        } catch (Exception ignored) {
+        } finally {
             SecurityContextHolder.clearContext();
-        } catch (AppException exception) {
-            log.info("Token already expired");
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
-        // Refresh: kiểm tra token (theo cửa sổ refreshable), thu hồi token cũ, rồi cấp token mới.
-        var signedJWT = verifyToken(request.getToken(), true);
-
-        var jit = signedJWT.getJWTClaimsSet().getJWTID();
-        var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        InvalidatedToken invalidatedToken =
-                InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
-
-        invalidatedTokenRepository.save(invalidatedToken);
-
-        var email = signedJWT.getJWTClaimsSet().getSubject();
-
-        var user =
-                userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
-
-        var token = generateToken(user);
-
-        return AuthenticationResponse.builder().token(token).authenticated(true).build();
     }
 
     @Override
@@ -174,7 +173,7 @@ public class AuthServiceImpl implements AuthService {
         boolean isValid = true;
 
         try {
-            verifyToken(token, false);
+            verifyToken(token);
         } catch (AppException e) {
             isValid = false;
         }
@@ -209,20 +208,26 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
-        // Verify chữ ký + kiểm tra hạn token (exp hoặc refreshable window) + kiểm tra token đã bị thu hồi (jti).
+    private Integer resolveCitizenId(User user) {
+        if (user.getRole() == null || user.getRole().getRoleCode() == null) {
+            return null;
+        }
+        if (!"CITIZEN".equalsIgnoreCase(user.getRole().getRoleCode())) {
+            return null;
+        }
+        if (user.getId() == null) {
+            return null;
+        }
+        return citizenRepository.findByUserId(user.getId()).map(Citizen::getId).orElse(null);
+    }
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        // Verify chữ ký + kiểm tra hạn token (exp) + kiểm tra token đã bị thu hồi (jti).
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
 
-        Date expiryTime = (isRefresh)
-                ? new Date(signedJWT
-                        .getJWTClaimsSet()
-                        .getIssueTime()
-                        .toInstant()
-                        .plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS)
-                        .toEpochMilli())
-                : signedJWT.getJWTClaimsSet().getExpirationTime();
+        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
 
