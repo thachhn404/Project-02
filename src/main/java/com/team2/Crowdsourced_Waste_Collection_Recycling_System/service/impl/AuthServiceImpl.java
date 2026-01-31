@@ -123,7 +123,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public AuthenticationResponse login(AuthenticationRequest request) {
-        // Xác thực bằng email/password, nếu đúng thì phát hành JWT.
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu dữ liệu đăng nhập");
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email không được để trống");
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu không được để trống");
+        }
+
         var user = userRepository
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));

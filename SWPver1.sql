@@ -393,20 +393,20 @@ INSERT INTO enterprise (name, address, ward, city, phone, email, license_number,
 -- Password hash = 'password123' (bcrypt)
 INSERT INTO users (email, password_hash, full_name, phone, role_id, enterprise_id, status) VALUES
 -- Admin
-('admin@wastemanagement.vn', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Nguyễn Văn Admin', '0901234567', 4, NULL, 'active'),
+('admin@wastemanagement.vn', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Nguyễn Văn Admin', '0901234567', 4, NULL, 'active'),
 -- Enterprise Admins
-('manager1@taichexanh.vn', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Trần Thị Lan', '0902345678', 3, 1, 'active'),
-('manager2@moitruongsach.vn', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Lê Văn Hùng', '0903456789', 3, 2, 'active'),
+('manager1@taichexanh.vn', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Trần Thị Lan', '0902345678', 3, 1, 'active'),
+('manager2@moitruongsach.vn', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Lê Văn Hùng', '0903456789', 3, 2, 'active'),
 -- Collectors
-('collector1@taichexanh.vn', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Phạm Văn Minh', '0904567890', 2, 1, 'active'),
-('collector2@taichexanh.vn', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Ngô Thị Hoa', '0905678901', 2, 1, 'active'),
-('collector3@moitruongsach.vn', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Hoàng Văn Nam', '0906789012', 2, 2, 'active'),
+('collector1@taichexanh.vn', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Phạm Văn Minh', '0904567890', 2, 1, 'active'),
+('collector2@taichexanh.vn', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Ngô Thị Hoa', '0905678901', 2, 1, 'active'),
+('collector3@moitruongsach.vn', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Hoàng Văn Nam', '0906789012', 2, 2, 'active'),
 -- Citizens
-('citizen1@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Võ Thị Mai', '0907890123', 1, NULL, 'active'),
-('citizen2@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Đặng Văn Tùng', '0908901234', 1, NULL, 'active'),
-('citizen3@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Bùi Thị Hương', '0909012345', 1, NULL, 'active'),
-('citizen4@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Lý Văn Đức', '0900123456', 1, NULL, 'active'),
-('citizen5@gmail.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', N'Trịnh Thị Nga', '0911234567', 1, NULL, 'active');
+('citizen1@gmail.com', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Võ Thị Mai', '0907890123', 1, NULL, 'active'),
+('citizen2@gmail.com', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Đặng Văn Tùng', '0908901234', 1, NULL, 'active'),
+('citizen3@gmail.com', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Bùi Thị Hương', '0909012345', 1, NULL, 'active'),
+('citizen4@gmail.com', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Lý Văn Đức', '0900123456', 1, NULL, 'active'),
+('citizen5@gmail.com', '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu', N'Trịnh Thị Nga', '0911234567', 1, NULL, 'active');
 
 -- 8. COLLECTORS
 INSERT INTO collectors (user_id, enterprise_id, employee_code, vehicle_type, vehicle_plate, status) VALUES
