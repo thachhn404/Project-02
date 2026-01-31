@@ -32,7 +32,7 @@ public class PointRule {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "enterprise_id", nullable = false)
-    private RecyclingEnterprise enterprise;
+    private Enterprise enterprise;
 
     @Column(name = "rule_name", nullable = false, length = 255)
     private String ruleName;

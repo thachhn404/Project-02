@@ -60,16 +60,12 @@ public class WasteReport {
     @Column(name = "ward", length = 100)
     private String ward;
 
-    @Column(name = "district", length = 100)
-    private String district;
-
     @Column(name = "city", length = 100)
     private String city;
 
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
-
     @Column(name = "status", length = 20)
     private String status;
 
