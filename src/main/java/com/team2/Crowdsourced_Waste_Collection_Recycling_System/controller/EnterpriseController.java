@@ -36,8 +36,6 @@ public class EnterpriseController {
     @PreAuthorize("hasAuthority('enterprise.assign_collector')")
     public ResponseEntity<CollectionRequest> assignCollector(@PathVariable Integer id, @RequestParam Integer collectorId) {
         // Logic gán collector...
-        return collectionRequestRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return null;
     }
 }
