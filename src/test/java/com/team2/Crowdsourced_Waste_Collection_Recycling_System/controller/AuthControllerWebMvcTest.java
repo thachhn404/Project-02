@@ -41,7 +41,10 @@ public class AuthControllerWebMvcTest {
 
     @Test
     void login_returns_200() throws Exception {
-        when(authService.login(any())).thenReturn(new AuthenticationResponse("token", true, null));
+        when(authService.login(any())).thenReturn(AuthenticationResponse.builder()
+                .token("token")
+                .authenticated(true)
+                .build());
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +54,10 @@ public class AuthControllerWebMvcTest {
 
     @Test
     void register_returns_200() throws Exception {
-        when(authService.register(any())).thenReturn(new AuthenticationResponse("token", true, null));
+        when(authService.register(any())).thenReturn(AuthenticationResponse.builder()
+                .token("token")
+                .authenticated(true)
+                .build());
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

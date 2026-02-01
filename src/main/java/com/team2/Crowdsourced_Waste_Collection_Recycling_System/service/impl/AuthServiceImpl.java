@@ -4,12 +4,14 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AuthenticationResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.IntrospectResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.InvalidatedToken;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppException;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CitizenRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CollectorRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.InvalidatedTokenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.UserRepository;
@@ -57,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
     UserRepository userRepository;
     RoleRepository roleRepository;
     CitizenRepository citizenRepository;
+    CollectorRepository collectorRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
 
@@ -86,8 +89,11 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã tồn tại trong hệ hệ thống");
         }
 
-        // Mặc định gán role CITIZEN nếu không chỉ định
         String roleCode = (request.getRoleCode() == null || request.getRoleCode().isBlank()) ? "CITIZEN" : request.getRoleCode();
+        if (!"CITIZEN".equalsIgnoreCase(roleCode)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ CITIZEN được tự đăng ký");
+        }
+
         Role role = roleRepository.findByRoleCodeIgnoreCase(roleCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quyền (Role) không tồn tại"));
 
@@ -141,13 +147,34 @@ public class AuthServiceImpl implements AuthService {
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        var token = generateToken(user);
-
         Integer citizenId = resolveCitizenId(user);
+        Integer collectorId = null;
+        Integer enterpriseId = null;
+
+        if (user.getRole() != null && user.getRole().getRoleCode() != null && user.getId() != null) {
+            String roleCode = user.getRole().getRoleCode();
+            if ("COLLECTOR".equalsIgnoreCase(roleCode)) {
+                var collector = collectorRepository.findByUserId(user.getId()).orElse(null);
+                if (collector != null) {
+                    collectorId = collector.getId();
+                    if (collector.getEnterprise() != null) {
+                        enterpriseId = collector.getEnterprise().getId();
+                    }
+                }
+            } else if ("ENTERPRISE".equalsIgnoreCase(roleCode) || "ENTERPRISE_ADMIN".equalsIgnoreCase(roleCode)) {
+                if (user.getEnterprise() != null) {
+                    enterpriseId = user.getEnterprise().getId();
+                }
+            }
+        }
+
+        var token = generateToken(user, citizenId, collectorId, enterpriseId);
         return AuthenticationResponse.builder()
                 .token(token)
                 .authenticated(true)
                 .citizenId(citizenId)
+                .collectorId(collectorId)
+                .enterpriseId(enterpriseId)
                 .build();
     }
 
@@ -190,19 +217,33 @@ public class AuthServiceImpl implements AuthService {
         return IntrospectResponse.builder().valid(isValid).build();
     }
 
-    private String generateToken(User user) {
+    private String generateToken(User user, Integer citizenId, Integer collectorId, Integer enterpriseId) {
         // Tạo JWT ký bằng HS512; claim "scope" chứa role + permissions để map sang authorities.
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
-        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+        JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
                 .issuer("team2.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", buildScope(user))
-                .build();
+                .claim("scope", buildScope(user));
+
+        if (user.getRole() != null && user.getRole().getRoleCode() != null) {
+            claimsBuilder.claim("role", user.getRole().getRoleCode());
+        }
+        if (citizenId != null) {
+            claimsBuilder.claim("citizenId", citizenId);
+        }
+        if (collectorId != null) {
+            claimsBuilder.claim("collectorId", collectorId);
+        }
+        if (enterpriseId != null) {
+            claimsBuilder.claim("enterpriseId", enterpriseId);
+        }
+
+        JWTClaimsSet jwtClaimsSet = claimsBuilder.build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
 

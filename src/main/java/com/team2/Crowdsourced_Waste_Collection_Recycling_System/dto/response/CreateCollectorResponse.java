@@ -1,6 +1,10 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 @Data
@@ -8,10 +12,9 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    String token;
-    boolean authenticated;
-    Integer citizenId;
+public class CreateCollectorResponse {
+    Integer userId;
     Integer collectorId;
     Integer enterpriseId;
+    String email;
 }
