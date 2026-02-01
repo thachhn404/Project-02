@@ -56,6 +56,9 @@ public class CollectionRequest {
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
     @Column(name = "estimated_arrival")
     private LocalDateTime estimatedArrival;
 

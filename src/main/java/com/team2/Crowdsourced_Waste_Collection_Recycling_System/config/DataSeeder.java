@@ -1,11 +1,15 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.config;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Permission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Permission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.RolePermission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CitizenRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CollectorRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.EnterpriseRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.PermissionRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RolePermissionRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
@@ -16,6 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+
 @Configuration
 @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataSeeder {
@@ -25,6 +31,8 @@ public class DataSeeder {
             RoleRepository roleRepository,
             UserRepository userRepository,
             CitizenRepository citizenRepository,
+            EnterpriseRepository enterpriseRepository,
+            CollectorRepository collectorRepository,
             PermissionRepository permissionRepository,
             RolePermissionRepository rolePermissionRepository,
             PasswordEncoder passwordEncoder) {
@@ -64,6 +72,14 @@ public class DataSeeder {
             createUserIfNotFound(userRepository, passwordEncoder, "admin@test.com", "admin123", "Test Admin", adminRole);
 
             userRepository.findByEmail("citizen@test.com").ifPresent(user -> createCitizenIfNotFound(citizenRepository, user));
+
+            userRepository.findByEmail("enterprise@test.com").ifPresent(enterpriseUser -> {
+                Enterprise enterprise = createEnterpriseIfNotFound(enterpriseRepository, enterpriseUser);
+                linkEnterpriseToUserIfMissing(userRepository, enterpriseUser, enterprise);
+                userRepository.findByEmail("collector@test.com").ifPresent(collectorUser ->
+                        createCollectorIfNotFound(collectorRepository, collectorUser, enterprise)
+                );
+            });
         };
     }
 
@@ -126,5 +142,48 @@ public class DataSeeder {
         citizen.setTotalReports(0);
         citizen.setValidReports(0);
         citizenRepository.save(citizen);
+    }
+
+    private Enterprise createEnterpriseIfNotFound(EnterpriseRepository enterpriseRepository, User enterpriseUser) {
+        String email = enterpriseUser.getEmail();
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return enterpriseRepository.findByEmailIgnoreCase(email).orElseGet(() -> {
+            Enterprise enterprise = new Enterprise();
+            enterprise.setName("Test Enterprise");
+            enterprise.setEmail(email);
+            enterprise.setStatus("active");
+            enterprise.setCreatedAt(LocalDateTime.now());
+            enterprise.setUpdatedAt(LocalDateTime.now());
+            return enterpriseRepository.save(enterprise);
+        });
+    }
+
+    private void linkEnterpriseToUserIfMissing(UserRepository userRepository, User enterpriseUser, Enterprise enterprise) {
+        if (enterprise == null) {
+            return;
+        }
+        if (enterpriseUser.getEnterprise() != null && enterpriseUser.getEnterprise().getId() != null) {
+            return;
+        }
+        enterpriseUser.setEnterprise(enterprise);
+        userRepository.save(enterpriseUser);
+    }
+
+    private void createCollectorIfNotFound(CollectorRepository collectorRepository, User collectorUser, Enterprise enterprise) {
+        if (collectorUser.getId() == null || enterprise == null || enterprise.getId() == null) {
+            return;
+        }
+        if (collectorRepository.findByUserId(collectorUser.getId()).isPresent()) {
+            return;
+        }
+
+        Collector collector = new Collector();
+        collector.setUser(collectorUser);
+        collector.setEnterprise(enterprise);
+        collector.setStatus("available");
+        collector.setCreatedAt(LocalDateTime.now());
+        collectorRepository.save(collector);
     }
 }
