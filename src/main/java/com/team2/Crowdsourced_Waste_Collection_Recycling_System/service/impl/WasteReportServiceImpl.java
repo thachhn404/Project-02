@@ -3,13 +3,13 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImages;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteType;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppException;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CitizenRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.ReportImagesRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.ReportImageRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.WasteTypeRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
@@ -37,7 +37,7 @@ public class WasteReportServiceImpl implements WasteReportService {
     private final WasteReportRepository wasteReportRepository;
     private final CitizenRepository citizenRepository;
     private final WasteTypeRepository wasteTypeRepository;
-    private final ReportImagesRepository reportImagesRepository;
+    private final ReportImageRepository reportImagesRepository;
 
     private static final String UPLOAD_DIR = "uploads";
 
@@ -89,7 +89,7 @@ public class WasteReportServiceImpl implements WasteReportService {
         log.info("Waste report created: {} by citizen: {}", reportCode, citizenEmail);
 
         // 6. Save ReportImage
-        ReportImages reportImage = new ReportImages();
+        ReportImage reportImage = new ReportImage();
         reportImage.setReport(report);
         reportImage.setImageUrl(imageUrl);
         reportImage.setImageType("report");
