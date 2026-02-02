@@ -56,6 +56,9 @@ public class CollectionRequest {
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 

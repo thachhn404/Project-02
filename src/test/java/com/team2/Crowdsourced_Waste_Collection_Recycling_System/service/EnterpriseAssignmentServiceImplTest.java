@@ -4,6 +4,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collectio
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionTracking;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.AuditLogRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CollectionTrackingRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.CollectorRepository;
@@ -30,6 +31,8 @@ class EnterpriseAssignmentServiceImplTest {
     CollectorRepository collectorRepository;
     @Mock
     CollectionTrackingRepository collectionTrackingRepository;
+    @Mock
+    AuditLogRepository auditLogRepository;
 
     @InjectMocks
     EnterpriseAssignmentServiceImpl service;
@@ -52,10 +55,11 @@ class EnterpriseAssignmentServiceImplTest {
         collector.setEnterprise(enterprise);
         collector.setStatus("active");
 
-        when(collectionRequestRepository.findById(100)).thenReturn(Optional.of(request));
         when(collectorRepository.findById(200)).thenReturn(Optional.of(collector));
-        when(collectionRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(collectionRequestRepository.assignCollector(100, 200, 10)).thenReturn(1);
+        when(collectionRequestRepository.getReferenceById(100)).thenReturn(request);
         when(collectionTrackingRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(auditLogRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.assignCollector(10, 100, 200);
 
@@ -64,7 +68,7 @@ class EnterpriseAssignmentServiceImplTest {
         assertEquals("assigned", response.getStatus());
         assertNotNull(response.getAssignedAt());
 
-        verify(collectionRequestRepository).save(request);
+        verify(collectionRequestRepository).assignCollector(100, 200, 10);
         verify(collectionTrackingRepository).save(trackingCaptor.capture());
 
         CollectionTracking tracking = trackingCaptor.getValue();
@@ -76,22 +80,30 @@ class EnterpriseAssignmentServiceImplTest {
     }
 
     @Test
-    void assignCollector_rejects_whenStatusNotPending() {
+    void assignCollector_rejects_whenStatusNotAllowed() {
         Enterprise enterprise = new Enterprise();
         enterprise.setId(10);
 
         CollectionRequest request = new CollectionRequest();
         request.setId(100);
         request.setEnterprise(enterprise);
-        request.setStatus("accepted");
+        request.setStatus("collected");
 
+        Collector collector = new Collector();
+        collector.setId(200);
+        collector.setEnterprise(enterprise);
+        collector.setStatus("active");
+
+        when(collectorRepository.findById(200)).thenReturn(Optional.of(collector));
+        when(collectionRequestRepository.assignCollector(100, 200, 10)).thenReturn(0);
         when(collectionRequestRepository.findById(100)).thenReturn(Optional.of(request));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> service.assignCollector(10, 100, 200));
 
         assertEquals(400, ex.getStatusCode().value());
-        verifyNoInteractions(collectorRepository);
+        verify(collectorRepository).findById(200);
         verify(collectionTrackingRepository, never()).save(any());
+        verify(auditLogRepository, never()).save(any());
     }
 }

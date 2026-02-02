@@ -16,32 +16,21 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.Inval
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.UserRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AuthService;
-import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.util.JWTHelper;
+import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.text.ParseException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.StringJoiner;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -62,14 +51,7 @@ public class AuthServiceImpl implements AuthService {
     CollectorRepository collectorRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
-
-    @NonFinal
-    @Value("${jwt.signerKey}")
-    protected String SIGNER_KEY;
-
-    @NonFinal
-    @Value("${jwt.valid-duration}")
-    protected long VALID_DURATION;
+    JWTHelper jwtHelper;
 
     @Override
     @Transactional
@@ -168,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        var token = generateToken(user, citizenId, collectorId, enterpriseId);
+        var token = jwtHelper.issueToken(user, citizenId, collectorId, enterpriseId);
         return AuthenticationResponse.builder()
                 .token(token)
                 .authenticated(true)
@@ -187,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
                 SecurityContextHolder.clearContext();
                 return;
             }
-            var signToken = verifyToken(request.getToken());
+            var signToken = jwtHelper.verifyToken(request.getToken());
 
             String jit = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
@@ -209,53 +191,12 @@ public class AuthServiceImpl implements AuthService {
         boolean isValid = true;
 
         try {
-            verifyToken(token);
+            jwtHelper.verifyToken(token);
         } catch (AppException e) {
             isValid = false;
         }
 
         return IntrospectResponse.builder().valid(isValid).build();
-    }
-
-    private String generateToken(User user, Integer citizenId, Integer collectorId, Integer enterpriseId) {
-        // Tạo JWT ký bằng HS512; claim "scope" chứa role + permissions để map sang authorities.
-        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-
-        JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
-                .issuer("team2.com")
-                .issueTime(new Date())
-                .expirationTime(new Date(
-                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
-                .jwtID(UUID.randomUUID().toString())
-                .claim("scope", buildScope(user));
-
-        if (user.getRole() != null && user.getRole().getRoleCode() != null) {
-            claimsBuilder.claim("role", user.getRole().getRoleCode());
-        }
-        if (citizenId != null) {
-            claimsBuilder.claim("citizenId", citizenId);
-        }
-        if (collectorId != null) {
-            claimsBuilder.claim("collectorId", collectorId);
-        }
-        if (enterpriseId != null) {
-            claimsBuilder.claim("enterpriseId", enterpriseId);
-        }
-
-        JWTClaimsSet jwtClaimsSet = claimsBuilder.build();
-
-        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
-        JWSObject jwsObject = new JWSObject(header, payload);
-
-        try {
-            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-            return jwsObject.serialize();
-        } catch (JOSEException e) {
-            log.error("Cannot create token", e);
-            throw new RuntimeException(e);
-        }
     }
 
     private Integer resolveCitizenId(User user) {
@@ -269,39 +210,5 @@ public class AuthServiceImpl implements AuthService {
             return null;
         }
         return citizenRepository.findByUserId(user.getId()).map(Citizen::getId).orElse(null);
-    }
-
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
-        // Verify chữ ký + kiểm tra hạn token (exp) + kiểm tra token đã bị thu hồi (jti).
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-
-        SignedJWT signedJWT = SignedJWT.parse(token);
-
-        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        var verified = signedJWT.verify(verifier);
-
-        if (!(verified && expiryTime.after(new Date()))) throw new AppException(ErrorCode.UNAUTHENTICATED);
-
-        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-
-        return signedJWT;
-    }
-
-    private String buildScope(User user) {
-        // Ghép scope theo định dạng "ROLE_X PERMISSION_Y ..." (phân tách bằng khoảng trắng).
-        StringJoiner stringJoiner = new StringJoiner(" ");
-
-        if (user.getRole() != null) {
-            stringJoiner.add("ROLE_" + user.getRole().getRoleCode().toUpperCase());
-            if (!CollectionUtils.isEmpty(user.getRole().getRolePermissions())) {
-                user.getRole().getRolePermissions().forEach(rolePermission -> {
-                    stringJoiner.add(rolePermission.getPermission().getPermissionCode());
-                });
-            }
-        }
-
-        return stringJoiner.toString();
     }
 }

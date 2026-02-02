@@ -11,6 +11,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.util.FileUpLoadU
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 @Service
 public class CloudinaryServiceImpl implements CloudinaryService {
@@ -35,13 +36,19 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
     @Override
     public CloudinaryResponse uploadImage(MultipartFile file) {
+        return uploadImage(file, null);
+    }
+
+    @Override
+    public CloudinaryResponse uploadImage(MultipartFile file, String module) {
         assertConfigured();
         FileUpLoadUtil.assertAllowedImage(file);
         try {
             Map<String, Object> options = new HashMap<>();
             options.put("resource_type", "image");
-            if (defaultFolder != null && !defaultFolder.isBlank()) {
-                options.put("folder", defaultFolder);
+            String folder = buildFolder(module);
+            if (folder != null && !folder.isBlank()) {
+                options.put("folder", folder);
             }
 
             Map<?, ?> result = cloudinary.uploader().upload(
@@ -59,6 +66,34 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         } catch (IOException e) {
             throw new IllegalStateException("Upload Cloudinary thất bại", e);
         }
+    }
+
+    private String buildFolder(String module) {
+        String normalizedModule = normalizeModule(module);
+        if (defaultFolder == null || defaultFolder.isBlank()) {
+            return normalizedModule;
+        }
+        if (normalizedModule == null || normalizedModule.isBlank()) {
+            return defaultFolder;
+        }
+        return defaultFolder + "/" + normalizedModule;
+    }
+
+    private String normalizeModule(String module) {
+        if (module == null || module.isBlank()) {
+            return null;
+        }
+        String normalized = module.trim().toLowerCase(Locale.ROOT);
+        if ("reports".equals(normalized)) {
+            return "reports";
+        }
+        if ("requests".equals(normalized)) {
+            return "requests";
+        }
+        if ("feedbacks".equals(normalized)) {
+            return "feedbacks";
+        }
+        throw new IllegalArgumentException("module không hợp lệ (chỉ chấp nhận: reports, requests, feedbacks)");
     }
 
     @Override

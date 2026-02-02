@@ -23,10 +23,13 @@ public class FileController {
     private final CloudinaryService cloudinaryService;
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<CloudinaryResponse> uploadImage(@RequestPart("file") MultipartFile file) {
+    public ApiResponse<CloudinaryResponse> uploadImage(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "module", required = false) String module
+    ) {
         try {
             return ApiResponse.<CloudinaryResponse>builder()
-                    .result(cloudinaryService.uploadImage(file))
+                    .result(cloudinaryService.uploadImage(file, module))
                     .build();
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
