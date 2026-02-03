@@ -4,4 +4,5 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Ass
 
 public interface EnterpriseAssignmentService {
     AssignCollectorResponse assignCollector(Integer enterpriseId, String requestCode, Integer collectorId);
+    AssignCollectorResponse assignCollector(Integer enterpriseId, Integer collectionRequestId, Integer collectorId);
 }

@@ -57,7 +57,6 @@ public class GlobalHandleException {
         body.put("error", "Access Denied");
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
-
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNoResourceFoundException(NoResourceFoundException ex) {
         Map<String, Object> body = new HashMap<>();

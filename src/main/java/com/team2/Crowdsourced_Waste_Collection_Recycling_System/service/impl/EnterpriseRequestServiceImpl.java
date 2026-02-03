@@ -49,6 +49,45 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
         Integer collectionRequestId = collectionRequestRepository.findByRequestCode(requestCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"))
                 .getId();
+        LocalDateTime now = LocalDateTime.now();
+        AuditLog auditLog = new AuditLog();
+        auditLog.setActorId(enterpriseId);
+        auditLog.setActorRole("ENTERPRISE");
+        auditLog.setAction("accept_enterprise");
+        auditLog.setTargetType("COLLECTION_REQUEST");
+        auditLog.setTargetId(collectionRequestId);
+        auditLog.setMetadata(null);
+        auditLog.setCreatedAt(now);
+        auditLogRepository.save(auditLog);
+        return collectionRequestId;
+    }
+
+    @Override
+    @Transactional
+    public void acceptRequest(Integer enterpriseId, Integer collectionRequestId) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+        if (collectionRequestId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu collection_request_id");
+        }
+
+        int updated = collectionRequestRepository.acceptByEnterprise(collectionRequestId, enterpriseId);
+        if (updated == 0) {
+            CollectionRequest request = collectionRequestRepository.findById(collectionRequestId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"));
+            if (request.getEnterprise() == null || request.getEnterprise().getId() == null
+                    || !request.getEnterprise().getId().equals(enterpriseId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collection Request không thuộc doanh nghiệp");
+            }
+            if (request.getCollector() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collection Request đã được gán collector");
+            }
+            if (request.getStatus() == null || !"pending".equalsIgnoreCase(request.getStatus())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collection Request không ở trạng thái pending");
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể accept Collection Request");
+        }
 
         LocalDateTime now = LocalDateTime.now();
         AuditLog auditLog = new AuditLog();
@@ -60,7 +99,5 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
         auditLog.setMetadata(null);
         auditLog.setCreatedAt(now);
         auditLogRepository.save(auditLog);
-
-        return collectionRequestId;
     }
 }

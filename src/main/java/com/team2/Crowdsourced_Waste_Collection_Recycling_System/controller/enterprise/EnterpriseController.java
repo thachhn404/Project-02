@@ -57,6 +57,18 @@ public class EnterpriseController {
         return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
     }
 
+    @PostMapping("/{id}/assign")
+    @PreAuthorize("hasRole('ENTERPRISE')")
+    public ApiResponse<AssignCollectorResponse> assignCollector(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            @RequestBody AssignCollectorRequest request
+    ) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, id, request.getCollectorId());
+        return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
+    }
+
     @PostMapping("/{requestCode}/accept")
     @PreAuthorize("hasRole('ENTERPRISE')")
     public ApiResponse<CollectionRequestActionResponse> acceptRequest(
@@ -68,6 +80,23 @@ public class EnterpriseController {
         return ApiResponse.<CollectionRequestActionResponse>builder()
                 .result(CollectionRequestActionResponse.builder()
                         .collectionRequestId(requestId)
+                        .status("accepted_enterprise")
+                        .actionAt(LocalDateTime.now())
+                        .build())
+                .build();
+    }
+
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasRole('ENTERPRISE')")
+    public ApiResponse<CollectionRequestActionResponse> acceptRequest(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id
+    ) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        enterpriseRequestService.acceptRequest(enterpriseId, id);
+        return ApiResponse.<CollectionRequestActionResponse>builder()
+                .result(CollectionRequestActionResponse.builder()
+                        .collectionRequestId(id)
                         .status("accepted_enterprise")
                         .actionAt(LocalDateTime.now())
                         .build())

@@ -12,7 +12,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citiz
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.ReportImageRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.WasteTypeRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -2,7 +2,6 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity

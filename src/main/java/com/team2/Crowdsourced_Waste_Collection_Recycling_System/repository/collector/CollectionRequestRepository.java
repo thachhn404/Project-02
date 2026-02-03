@@ -33,7 +33,6 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     List<CollectionRequest> findByEnterprise_Id(Integer enterpriseId);
 
     Optional<CollectionRequest> findByRequestCode(String requestCode);
-
     boolean existsByIdAndEnterprise_IdAndStatus(Integer id, Integer enterpriseId, String status);
 
     /**
@@ -68,7 +67,6 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
             @Param("requestCode") String requestCode,
             @Param("enterpriseId") Integer enterpriseId
     );
-
     /**
      * Chỉ cho phép gán khi request thuộc enterprise, chưa được gán collector, và đang ở trạng thái accepted_enterprise.
      */
