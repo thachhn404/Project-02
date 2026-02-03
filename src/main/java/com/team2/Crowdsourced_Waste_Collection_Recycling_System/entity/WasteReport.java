@@ -31,7 +31,7 @@ public class WasteReport {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @Column(name = "report_code", nullable = false, unique = true, length = 20)
+    @Column(name = "report_code", nullable = false, unique = true, length = 50)
     private String reportCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -45,8 +45,8 @@ public class WasteReport {
     @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(name = "estimated_weight_kg", precision = 10, scale = 2)
-    private BigDecimal estimatedWeightKg;
+    // @Column(name = "estimated_weight_kg", precision = 10, scale = 2)
+    // private BigDecimal estimatedWeightKg;
 
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
@@ -57,11 +57,11 @@ public class WasteReport {
     @Column(name = "address", length = 500)
     private String address;
 
-    @Column(name = "ward", length = 100)
-    private String ward;
+    // @Column(name = "ward", length = 100)
+    // private String ward;
 
-    @Column(name = "city", length = 100)
-    private String city;
+    // @Column(name = "city", length = 100)
+    // private String city;
 
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
@@ -69,24 +69,24 @@ public class WasteReport {
     @Column(name = "status", length = 20)
     private String status;
 
-    @Column(name = "is_valid")
-    private Boolean isValid;
+    // @Column(name = "is_valid")
+    // private Boolean isValid;
 
-    @Column(name = "validation_note", length = 500)
-    private String validationNote;
+    // @Column(name = "validation_note", length = 500)
+    // private String validationNote;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "validated_by")
-    private User validatedBy;
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "validated_by")
+    // private User validatedBy;
 
-    @Column(name = "validated_at")
-    private LocalDateTime validatedAt;
+    // @Column(name = "validated_at")
+    // private LocalDateTime validatedAt;
 
-    @Column(name = "points_awarded")
-    private Integer pointsAwarded;
+    // @Column(name = "points_awarded")
+    // private Integer pointsAwarded;
 
-    @Column(name = "quality_rating")
-    private Integer qualityRating;
+    // @Column(name = "quality_rating")
+    // private Integer qualityRating;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

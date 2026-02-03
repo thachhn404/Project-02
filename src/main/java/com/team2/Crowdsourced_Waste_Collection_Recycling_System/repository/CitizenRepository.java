@@ -12,4 +12,6 @@ public interface CitizenRepository extends JpaRepository<Citizen, Integer> {
     Optional<Citizen> findByUser(User user);
 
     Optional<Citizen> findByUserId(Integer userId);
+    
+    Optional<Citizen> findByUser_Email(String email);
 }
