@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -74,6 +73,7 @@ public class WasteReportServiceImpl implements WasteReportService {
         report.setCitizen(citizen);
         report.getWasteTypes().addAll(wasteTypes);
         report.setDescription(request.getDescription());
+        report.setEstimatedWeight(request.getEstimatedWeight());
         report.setLatitude(BigDecimal.valueOf(request.getLatitude()));
         report.setLongitude(BigDecimal.valueOf(request.getLongitude()));
         report.setStatus("PENDING");
