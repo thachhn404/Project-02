@@ -1,6 +1,7 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateWasteReportRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CloudinaryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
@@ -12,6 +13,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.Citiz
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.ReportImageRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.WasteTypeRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CloudinaryService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,8 +37,7 @@ public class WasteReportServiceImpl implements WasteReportService {
     private final CitizenRepository citizenRepository;
     private final WasteTypeRepository wasteTypeRepository;
     private final ReportImageRepository reportImagesRepository;
-
-    private static final String UPLOAD_DIR = "uploads";
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional
@@ -70,8 +66,8 @@ public class WasteReportServiceImpl implements WasteReportService {
             wasteTypes.add(wasteType);
         }
 
-        // 4. Upload Image
-        String imageUrl = uploadImage(request.getImage());
+        // 4. Upload Image to Cloudinary
+        CloudinaryResponse cloudinaryResponse = cloudinaryService.uploadImage(request.getImage(), "reports");
 
         // 5. Create WasteReport
         WasteReport report = new WasteReport();
@@ -81,7 +77,8 @@ public class WasteReportServiceImpl implements WasteReportService {
         report.setLatitude(BigDecimal.valueOf(request.getLatitude()));
         report.setLongitude(BigDecimal.valueOf(request.getLongitude()));
         report.setStatus("PENDING");
-        report.setImages(imageUrl); // Saving URL to images column
+        report.setImages(cloudinaryResponse.getUrl());
+        report.setCloudinaryPublicId(cloudinaryResponse.getPublicId());
 
         // Generate Report Code
         String reportCode = "WR-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4);
@@ -98,7 +95,7 @@ public class WasteReportServiceImpl implements WasteReportService {
         // 6. Save ReportImage
         ReportImage reportImage = new ReportImage();
         reportImage.setReport(report);
-        reportImage.setImageUrl(imageUrl);
+        reportImage.setImageUrl(cloudinaryResponse.getUrl());
         reportImage.setImageType("report");
         reportImagesRepository.save(reportImage);
 
@@ -109,26 +106,5 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .reportCode(reportCode)
                 .status("PENDING")
                 .build();
-    }
-
-    private String uploadImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
-        }
-
-        try {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            return "/uploads/" + filename;
-        } catch (IOException e) {
-            throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
-        }
     }
 }

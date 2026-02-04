@@ -1,6 +1,5 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -70,6 +69,10 @@ public class WasteReport {
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
+
+    @Column(name = "cloudinary_public_id", length = 255)
+    private String cloudinaryPublicId;
+
     @Column(name = "status", length = 20)
     private String status;
 
