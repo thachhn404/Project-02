@@ -52,7 +52,7 @@ public class WasteReport {
     @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(name = "estimated_weight", precision = 10, scale = 2, nullable = false)
+    @Column(name = "estimated_weight", precision = 10, scale = 2)
     private BigDecimal estimatedWeight; // Khối lượng ước tính (kg)
 
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)

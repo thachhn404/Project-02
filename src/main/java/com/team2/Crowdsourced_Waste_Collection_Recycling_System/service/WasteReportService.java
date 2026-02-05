@@ -9,4 +9,6 @@ public interface WasteReportService {
     WasteReportResponse createReport(CreateWasteReportRequest request, String citizenEmail);
 
     List<WasteReportResponse> getMyReports(String citizenEmail);
+
+    WasteReportResponse getMyReportById(Integer reportId, String citizenEmail);
 }

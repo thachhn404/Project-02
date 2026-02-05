@@ -60,4 +60,20 @@ public class CitizenController {
 
         return ResponseEntity.ok(apiResponse);
     }
+
+    @GetMapping("/reports/{id}")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<ApiResponse<WasteReportResponse>> getMyReportById(@PathVariable("id") Integer id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentPrincipalName = authentication.getName();
+
+        WasteReportResponse report = wasteReportService.getMyReportById(id, currentPrincipalName);
+
+        ApiResponse<WasteReportResponse> apiResponse = ApiResponse.<WasteReportResponse>builder()
+                .result(report)
+                .message("Report retrieved successfully")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
 }

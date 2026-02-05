@@ -138,11 +138,11 @@ public class DataSeeder {
                     .orElseThrow();
 
             WasteType household = createWasteTypeIfNotFound(wasteTypeRepository, "HOUSEHOLD", "Household Waste",
-                    "HOUSEHOLD", 10, false);
+                    10, false);
             WasteType recyclable = createWasteTypeIfNotFound(wasteTypeRepository, "RECYCLABLE", "Recyclable Waste",
-                    "RECYCLABLE", 20, true);
+                    20, true);
             WasteType hazardous = createWasteTypeIfNotFound(wasteTypeRepository, "HAZARDOUS", "Hazardous Waste",
-                    "HAZARDOUS", 30, false);
+                    30, false);
 
             seedCitizenAndEnterpriseFlow(
                     citizen1,
@@ -268,13 +268,12 @@ public class DataSeeder {
         });
     }
 
-    private WasteType createWasteTypeIfNotFound(WasteTypeRepository repo, String code, String name, String category,
-            int basePoints, boolean recyclable) {
+    private WasteType createWasteTypeIfNotFound(WasteTypeRepository repo, String code, String name, int basePoints,
+            boolean recyclable) {
         return repo.findByCode(code).orElseGet(() -> {
             WasteType wasteType = new WasteType();
             wasteType.setCode(code);
             wasteType.setName(name);
-            wasteType.setCategory(category);
             wasteType.setBasePoints(basePoints);
             wasteType.setIsRecyclable(recyclable);
             wasteType.setCreatedAt(LocalDateTime.now());
@@ -375,8 +374,9 @@ public class DataSeeder {
             WasteReport report = new WasteReport();
             report.setReportCode(reportCode);
             report.setCitizen(citizen);
-            report.setWasteType(wasteType);
+            report.getWasteTypes().add(wasteType);
             report.setDescription("Seed report " + reportCode);
+            report.setEstimatedWeight(new BigDecimal("1.00"));
             report.setLatitude(new BigDecimal("10.77653000"));
             report.setLongitude(new BigDecimal("106.70098000"));
             report.setAddress("Seed address");

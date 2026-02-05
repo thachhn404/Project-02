@@ -131,4 +131,24 @@ public class WasteReportServiceImpl implements WasteReportService {
                                                 .build())
                                 .toList();
         }
+
+        @Override
+        public WasteReportResponse getMyReportById(Integer reportId, String citizenEmail) {
+                Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+                WasteReport report = wasteReportRepository.findById(reportId)
+                                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
+
+                if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
+                        throw new AppException(ErrorCode.UNAUTHORIZED);
+                }
+
+                return WasteReportResponse.builder()
+                                .id(report.getId())
+                                .reportCode(report.getReportCode())
+                                .status(report.getStatus().toString())
+                                .createdAt(report.getCreatedAt())
+                                .build();
+        }
 }
