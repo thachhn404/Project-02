@@ -1,7 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+// mapped from table waste_reports
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -48,7 +52,7 @@ public class WasteReport {
     @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(name = "estimated_weight", precision = 10, scale = 2, nullable = false)
+    @Column(name = "estimated_weight", precision = 10, scale = 2)
     private BigDecimal estimatedWeight; // Khối lượng ước tính (kg)
 
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
@@ -73,8 +77,9 @@ public class WasteReport {
     @Column(name = "cloudinary_public_id", length = 255)
     private String cloudinaryPublicId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
-    private String status;
+    private WasteReportStatus status;
 
     // @Column(name = "is_valid")
     // private Boolean isValid;

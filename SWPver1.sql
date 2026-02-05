@@ -132,6 +132,7 @@ CREATE TABLE waste_reports (
     citizen_id INT NOT NULL,
     waste_type_id INT NOT NULL,
     description NVARCHAR(1000) NULL,
+    estimated_weight DECIMAL(10,2) NULL,
     latitude DECIMAL(10,8) NOT NULL,
     longitude DECIMAL(11,8) NOT NULL,
     address NVARCHAR(500) NULL,

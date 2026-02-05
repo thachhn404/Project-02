@@ -6,6 +6,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Was
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteType;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppException;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
@@ -77,7 +78,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                 report.setEstimatedWeight(request.getEstimatedWeight());
                 report.setLatitude(BigDecimal.valueOf(request.getLatitude()));
                 report.setLongitude(BigDecimal.valueOf(request.getLongitude()));
-                report.setStatus("PENDING");
+                report.setStatus(WasteReportStatus.PENDING);
                 report.setImages(cloudinaryResponse.getUrl());
                 report.setCloudinaryPublicId(cloudinaryResponse.getPublicId());
 
@@ -125,9 +126,29 @@ public class WasteReportServiceImpl implements WasteReportService {
                                 .map(report -> WasteReportResponse.builder()
                                                 .id(report.getId())
                                                 .reportCode(report.getReportCode())
-                                                .status(report.getStatus())
+                                                .status(report.getStatus().toString())
                                                 .createdAt(report.getCreatedAt())
                                                 .build())
                                 .toList();
+        }
+
+        @Override
+        public WasteReportResponse getMyReportById(Integer reportId, String citizenEmail) {
+                Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+                WasteReport report = wasteReportRepository.findById(reportId)
+                                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
+
+                if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
+                        throw new AppException(ErrorCode.UNAUTHORIZED);
+                }
+
+                return WasteReportResponse.builder()
+                                .id(report.getId())
+                                .reportCode(report.getReportCode())
+                                .status(report.getStatus().toString())
+                                .createdAt(report.getCreatedAt())
+                                .build();
         }
 }
