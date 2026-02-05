@@ -12,6 +12,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/citizen")
 @RequiredArgsConstructor
@@ -38,6 +40,22 @@ public class CitizenController {
         ApiResponse<WasteReportResponse> apiResponse = ApiResponse.<WasteReportResponse>builder()
                 .result(response)
                 .message("Report created successfully")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/reports")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<ApiResponse<List<WasteReportResponse>>> getMyReports() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentPrincipalName = authentication.getName();
+
+        List<WasteReportResponse> reports = wasteReportService.getMyReports(currentPrincipalName);
+
+        ApiResponse<List<WasteReportResponse>> apiResponse = ApiResponse.<List<WasteReportResponse>>builder()
+                .result(reports)
+                .message("Reports retrieved successfully")
                 .build();
 
         return ResponseEntity.ok(apiResponse);

@@ -13,6 +13,5 @@ public interface WasteReportRepository extends JpaRepository<WasteReport, Intege
     List<WasteReport> findByCitizen_Id(Integer citizenId);
     List<WasteReport> findByStatus(String status);
     long countByCitizen_IdAndCreatedAtBetween(Integer citizenId, LocalDateTime start, LocalDateTime end);
-
     Optional<WasteReport> findByReportCode(String reportCode);
 }

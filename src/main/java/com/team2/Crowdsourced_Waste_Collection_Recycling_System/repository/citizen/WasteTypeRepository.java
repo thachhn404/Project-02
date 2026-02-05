@@ -15,13 +15,13 @@ public interface WasteTypeRepository extends JpaRepository<WasteType, Integer> {
     
     Optional<WasteType> findByName(String name);
     
-    List<WasteType> findByCategory(String category);
+//    List<WasteType> findByCategory(String category);
+//
+//    List<WasteType> findByIsRecyclable(Boolean isRecyclable);
     
-    List<WasteType> findByIsRecyclable(Boolean isRecyclable);
-    
-    @Query("SELECT w FROM WasteType w WHERE w.isRecyclable = true ORDER BY w.basePoints DESC")
-    List<WasteType> findAllRecyclableOrderByPoints();
-    
-    @Query("SELECT w FROM WasteType w WHERE w.category = :category ORDER BY w.basePoints DESC")
-    List<WasteType> findByCategoryOrderByPoints(@Param("category") String category);
+//    @Query("SELECT w FROM WasteType w WHERE w.isRecyclable = true ORDER BY w.basePoints DESC")
+//    List<WasteType> findAllRecyclableOrderByPoints();
+//
+//    @Query("SELECT w FROM WasteType w WHERE w.category = :category ORDER BY w.basePoints DESC")
+//    List<WasteType> findByCategoryOrderByPoints(@Param("category") String category);
 }

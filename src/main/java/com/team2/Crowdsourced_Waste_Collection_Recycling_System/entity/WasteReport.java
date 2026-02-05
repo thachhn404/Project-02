@@ -11,7 +11,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -21,6 +23,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "waste_reports")
@@ -41,15 +45,15 @@ public class WasteReport {
     @JoinColumn(name = "citizen_id", nullable = false)
     private Citizen citizen;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "waste_type_id", nullable = false)
-    private WasteType wasteType;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "waste_report_types", joinColumns = @JoinColumn(name = "waste_report_id"), inverseJoinColumns = @JoinColumn(name = "waste_type_id"))
+    private List<WasteType> wasteTypes = new ArrayList<>();
 
     @Column(name = "description", length = 1000)
     private String description;
 
-    // @Column(name = "estimated_weight_kg", precision = 10, scale = 2)
-    // private BigDecimal estimatedWeightKg;
+    @Column(name = "estimated_weight", precision = 10, scale = 2, nullable = false)
+    private BigDecimal estimatedWeight; // Khối lượng ước tính (kg)
 
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
@@ -69,6 +73,10 @@ public class WasteReport {
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
+
+    @Column(name = "cloudinary_public_id", length = 255)
+    private String cloudinaryPublicId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
     private WasteReportStatus status;
