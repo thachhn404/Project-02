@@ -1,8 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
 // mapped from table waste_reports
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -66,8 +69,9 @@ public class WasteReport {
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
-    private String status;
+    private WasteReportStatus status;
 
     // @Column(name = "is_valid")
     // private Boolean isValid;

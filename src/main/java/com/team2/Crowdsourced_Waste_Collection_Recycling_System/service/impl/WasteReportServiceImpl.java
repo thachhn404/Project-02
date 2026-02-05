@@ -5,6 +5,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Was
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteType;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppException;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
@@ -51,7 +52,8 @@ public class WasteReportServiceImpl implements WasteReportService {
         // 2. Check daily limit
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
-        long todayReports = wasteReportRepository.countByCitizen_IdAndCreatedAtBetween(citizen.getId(), startOfDay, endOfDay);
+        long todayReports = wasteReportRepository.countByCitizen_IdAndCreatedAtBetween(citizen.getId(), startOfDay,
+                endOfDay);
 
         if (todayReports >= 5) {
             log.warn("Citizen {} exceeded daily report limit", citizen.getId());
@@ -73,17 +75,17 @@ public class WasteReportServiceImpl implements WasteReportService {
         report.setDescription(request.getDescription());
         report.setLatitude(BigDecimal.valueOf(request.getLatitude()));
         report.setLongitude(BigDecimal.valueOf(request.getLongitude()));
-        report.setStatus("PENDING");
+        report.setStatus(WasteReportStatus.PENDING);
         report.setImages(imageUrl); // Saving URL to images column
-        
+
         // Generate Report Code
         String reportCode = "WR-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4);
         report.setReportCode(reportCode);
-        
+
         // Set creation time
         report.setCreatedAt(LocalDateTime.now());
         report.setUpdatedAt(LocalDateTime.now());
-        
+
         // Save Report
         report = wasteReportRepository.save(report);
         log.info("Waste report created: {} by citizen: {}", reportCode, citizenEmail);

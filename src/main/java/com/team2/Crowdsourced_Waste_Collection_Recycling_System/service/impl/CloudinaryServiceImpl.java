@@ -83,7 +83,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         if (module == null || module.isBlank()) {
             return null;
         }
-        String normalized = module.trim().toLowerCase(Locale.ROOT);
+        String normalized = module.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace('-', '_')
+                .replace(' ', '_');
         if ("reports".equals(normalized)) {
             return "reports";
         }
@@ -93,10 +96,17 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         if ("feedbacks".equals(normalized)) {
             return "feedbacks";
         }
-        if ("collector_reports".equals(normalized)) {
-            return "collector_reports";
+        if ("collector_reports".equals(normalized)
+                || "collector_report".equals(normalized)
+                || "collectorreport".equals(normalized)
+                || "collectorreports".equals(normalized)
+                || "colletor_reports".equals(normalized)
+                || "colletor_report".equals(normalized)
+                || "colletorreport".equals(normalized)
+                || "colletorreports".equals(normalized)) {
+            return "collectorReport";
         }
-        throw new IllegalArgumentException("module không hợp lệ (chỉ chấp nhận: reports, requests, feedbacks, collector_reports)");
+        throw new IllegalArgumentException("module không hợp lệ (chỉ chấp nhận: reports, requests, feedbacks, collectorReport)");
     }
 
     @Override

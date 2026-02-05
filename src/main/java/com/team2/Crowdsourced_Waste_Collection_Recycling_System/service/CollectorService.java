@@ -2,22 +2,26 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service;
 
 public interface CollectorService {
     /**
-     * Collector chấp nhận nhiệm vụ (ghi audit log, không đổi trạng thái).
+     * Collector chấp nhận nhiệm vụ: assigned -> accepted_collector.
      */
     void acceptTask(Integer requestId, Integer collectorId);
 
     /**
-     * Collector bắt đầu nhiệm vụ (chuyển sang ON_THE_WAY).
+     * Collector bắt đầu di chuyển: accepted_collector -> on_the_way.
      */
     void startTask(Integer requestId, Integer collectorId);
 
     /**
-     * Collector từ chối nhiệm vụ (chuyển về ACCEPTED để enterprise gán lại).
+     * Collector từ chối nhiệm vụ (chỉ khi assigned):
+     * - status -> accepted_enterprise
+     * - unassign collector để enterprise phân công lại
      */
     void rejectTask(Integer requestId, Integer collectorId, String reason);
 
     /**
-     * Collector hoàn thành nhiệm vụ (chuyển sang COLLECTED).
+     * Collector hoàn thành nhiệm vụ (chỉ cập nhật status):
+     * - on_the_way -> collected
+     * Lưu ý: nếu cần upload ảnh + tạo report, dùng CollectorReportService.
      */
     void completeTask(Integer requestId, Integer collectorId);
 }

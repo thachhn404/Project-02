@@ -6,5 +6,5 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collectio
 
 @Repository
 public interface CollectionTrackingRepository extends JpaRepository<CollectionTracking, Integer> {
-
+    boolean existsByCollectionRequest_IdAndAction(Integer collectionRequestId, String action);
 }

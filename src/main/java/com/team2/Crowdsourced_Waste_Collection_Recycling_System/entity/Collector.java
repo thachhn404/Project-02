@@ -1,8 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
 // mapped from table collectors
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -52,7 +55,7 @@ public class Collector {
     private String vehiclePlate;
 
     @Column(name = "status", length = 20)
-    private String status;
+    private CollectorStatus status;
 
     @Column(name = "current_latitude", precision = 10, scale = 8)
     private BigDecimal currentLatitude;

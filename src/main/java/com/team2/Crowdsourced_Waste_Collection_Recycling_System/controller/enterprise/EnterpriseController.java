@@ -50,54 +50,28 @@ public class EnterpriseController {
     public ApiResponse<AssignCollectorResponse> assignCollector(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String requestCode,
-            @RequestBody AssignCollectorRequest request
-    ) {
+            @RequestBody AssignCollectorRequest request) {
         Integer enterpriseId = extractEnterpriseId(jwt);
-        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, requestCode, request.getCollectorId());
+        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, requestCode,
+                request.getCollectorId());
         return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
     }
 
-    @PostMapping("/{id:\\d+}/assign")
+    /**
+     * Enterprise accept một WasteReport và tự động tạo CollectionRequest
+     */
+    @PostMapping("/accept/{reportCode}")
     @PreAuthorize("hasRole('ENTERPRISE')")
-    public ApiResponse<AssignCollectorResponse> assignCollector(
+    public ApiResponse<CollectionRequestActionResponse> acceptWasteReport(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id,
-            @RequestBody AssignCollectorRequest request
-    ) {
+            @PathVariable String reportCode) {
         Integer enterpriseId = extractEnterpriseId(jwt);
-        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, id, request.getCollectorId());
-        return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
-    }
+        Integer collectionRequestId = enterpriseRequestService.acceptWasteReport(enterpriseId, reportCode);
 
-    @PostMapping("/{requestCode}/accept")
-    @PreAuthorize("hasRole('ENTERPRISE')")
-    public ApiResponse<CollectionRequestActionResponse> acceptRequest(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String requestCode
-    ) {
-        Integer enterpriseId = extractEnterpriseId(jwt);
-        Integer requestId = enterpriseRequestService.acceptRequest(enterpriseId, requestCode);
         return ApiResponse.<CollectionRequestActionResponse>builder()
                 .result(CollectionRequestActionResponse.builder()
-                        .collectionRequestId(requestId)
-                        .status("accepted_enterprise")
-                        .actionAt(LocalDateTime.now())
-                        .build())
-                .build();
-    }
-
-    @PostMapping("/{id:\\d+}/accept")
-    @PreAuthorize("hasRole('ENTERPRISE')")
-    public ApiResponse<CollectionRequestActionResponse> acceptRequest(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id
-    ) {
-        Integer enterpriseId = extractEnterpriseId(jwt);
-        enterpriseRequestService.acceptRequest(enterpriseId, id);
-        return ApiResponse.<CollectionRequestActionResponse>builder()
-                .result(CollectionRequestActionResponse.builder()
-                        .collectionRequestId(id)
-                        .status("accepted_enterprise")
+                        .collectionRequestId(collectionRequestId)
+                        .status("pending")
                         .actionAt(LocalDateTime.now())
                         .build())
                 .build();

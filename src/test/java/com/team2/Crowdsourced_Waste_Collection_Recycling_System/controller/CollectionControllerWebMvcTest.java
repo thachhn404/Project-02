@@ -3,7 +3,9 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.config.CustomJwtDecoder;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.config.SecurityConfig;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.collector.CollectionController;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorReportService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.security.core.authority.AuthorityUtils.createAuthorityList;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,6 +37,9 @@ class CollectionControllerWebMvcTest {
 
     @org.springframework.boot.test.mock.mockito.MockBean
     CollectorService collectorService;
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    CollectorReportService collectorReportService;
 
     @org.springframework.boot.test.mock.mockito.MockBean
     CustomJwtDecoder customJwtDecoder;
@@ -126,15 +132,48 @@ class CollectionControllerWebMvcTest {
 
     @Test
     void completeTask_calls_service_and_returns_expected_status() throws Exception {
-        mockMvc.perform(post("/api/collector/collections/{id}/complete", 103)
+        var response = com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorReportResponse.builder()
+                .reportId(999)
+                .collectionRequestId(103)
+                .collectorId(200)
+                .collectorName("Test Collector")
+                .status(CollectorReportStatus.COMPLETED)
+                .collectorNote("done")
+                .imageUrls(List.of("https://example.com/1.png"))
+                .build();
+
+        when(collectorReportService.createCollectorReport(any(), eq(200))).thenReturn(response);
+
+        var file = new org.springframework.mock.web.MockMultipartFile(
+                "images",
+                "photo.png",
+                "image/png",
+                "x".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/collector/collections/{id}/complete", 103)
+                        .file(file)
+                        .param("collectorNote", "done")
+                        .param("actualWeight", "5.5")
+                        .param("address", "123 Test Street")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.reportId").value(999))
                 .andExpect(jsonPath("$.result.collectionRequestId").value(103))
-                .andExpect(jsonPath("$.result.status").value("collected"));
+                .andExpect(jsonPath("$.result.collectorId").value(200));
 
-        verify(collectorService).completeTask(103, 200);
-        verifyNoMoreInteractions(collectorService);
+        verify(collectorReportService).createCollectorReport(any(), eq(200));
+    }
+
+    @Test
+    void getReportByCollectionRequest_whenMissing_returns_404() throws Exception {
+        when(collectorReportService.getReportByCollectionRequest(105, 200)).thenReturn(null);
+
+        mockMvc.perform(get("/api/collector/collections/{id}/report", 105)
+                        .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
+                                .jwt(j -> j.claim("collectorId", 200))))
+                .andExpect(status().isNotFound());
     }
 
     static class TaskView implements CollectionRequestRepository.CollectorTaskView {

@@ -1,5 +1,6 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,20 +44,22 @@ public class CollectorReport {
     @JoinColumn(name = "collector_id", nullable = false)
     private Collector collector;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private CollectorReportStatus status;
 
     @Column(name = "collector_note", length = 1000)
     private String collectorNote;
 
+    @Column(name = "actual_weight")
+    private BigDecimal actualWeight;
+
     @Column(name = "collected_at")
     private LocalDateTime collectedAt;
 
-    @Column(name = "latitude", precision = 10, scale = 8)
+    @Column(name = "latitude")
     private BigDecimal latitude;
 
-    @Column(name = "longitude", precision = 11, scale = 8)
+    @Column(name = "longitude")
     private BigDecimal longitude;
 
     @Column(name = "created_at")

@@ -4,6 +4,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.Crea
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CreateCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
@@ -17,13 +18,17 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/enterprise/collectors")
@@ -40,8 +45,7 @@ public class EnterpriseCollectorController {
     @Transactional
     public ApiResponse<CreateCollectorResponse> createCollector(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody CreateCollectorRequest request
-    ) {
+            @RequestBody CreateCollectorRequest request) {
         Integer enterpriseId = extractEnterpriseId(jwt);
 
         if (request == null) {
@@ -83,7 +87,7 @@ public class EnterpriseCollectorController {
         collector.setEmployeeCode(request.getEmployeeCode());
         collector.setVehicleType(request.getVehicleType());
         collector.setVehiclePlate(request.getVehiclePlate());
-        collector.setStatus("available");
+        collector.setStatus(CollectorStatus.AVAILABLE);
         collector.setCreatedAt(LocalDateTime.now());
         Collector savedCollector = collectorRepository.save(collector);
 
@@ -94,7 +98,55 @@ public class EnterpriseCollectorController {
                         .enterpriseId(enterpriseId)
                         .email(savedUser.getEmail())
                         .fullName(savedUser.getFullName())
+                        .phone(savedUser.getPhone())
+                        .employeeCode(savedCollector.getEmployeeCode())
+                        .status(savedCollector.getStatus() != null ? savedCollector.getStatus().name().toLowerCase() : null)
+                        .vehicleType(savedCollector.getVehicleType())
+                        .vehiclePlate(savedCollector.getVehiclePlate())
                         .build())
+                .build();
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
+    @Transactional(readOnly = true)
+    public ApiResponse<List<CreateCollectorResponse>> getCollectors(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(value = "status", required = false) String status) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+
+        List<Collector> collectors;
+        if (status == null || status.isBlank()) {
+            collectors = collectorRepository.findByEnterprise_IdOrderByCreatedAtDesc(enterpriseId);
+        } else {
+            CollectorStatus collectorStatus = CollectorStatus.fromString(status);
+            if (collectorStatus == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status không hợp lệ");
+            }
+            collectors = collectorRepository.findByEnterprise_IdAndStatusOrderByCreatedAtDesc(enterpriseId, collectorStatus);
+        }
+
+        List<CreateCollectorResponse> result = new ArrayList<>();
+        for (Collector c : collectors) {
+            Integer userId = c.getUser() != null ? c.getUser().getId() : null;
+            String phone = c.getUser() != null ? c.getUser().getPhone() : null;
+
+            result.add(CreateCollectorResponse.builder()
+                    .userId(userId)
+                    .collectorId(c.getId())
+                    .enterpriseId(enterpriseId)
+                    .email(c.getEmail())
+                    .fullName(c.getFullName())
+                    .phone(phone)
+                    .employeeCode(c.getEmployeeCode())
+                    .status(c.getStatus() != null ? c.getStatus().name().toLowerCase() : null)
+                    .vehicleType(c.getVehicleType())
+                    .vehiclePlate(c.getVehiclePlate())
+                    .build());
+        }
+
+        return ApiResponse.<List<CreateCollectorResponse>>builder()
+                .result(result)
                 .build();
     }
 

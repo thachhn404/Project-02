@@ -9,6 +9,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.PointRule
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 
 @Repository
@@ -58,5 +59,7 @@ public interface PointRuleRepository extends JpaRepository<PointRule, Integer> {
     
     @Query("SELECT pr FROM PointRule pr WHERE pr.enterprise.id = :enterpriseId ORDER BY pr.priority DESC, pr.createdAt DESC")
     List<PointRule> findByEnterpriseIdOrderByPriority(@Param("enterpriseId") Integer enterpriseId);
+
+    Optional<PointRule> findByEnterpriseIdAndRuleName(Integer enterpriseId, String ruleName);
 }
 

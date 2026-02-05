@@ -1,8 +1,11 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
 // mapped from table collection_requests
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -21,7 +24,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"report", "enterprise", "collector"}) // Ngăn log / debug / exception leak data
+@ToString(exclude = { "report", "enterprise", "collector" }) // Ngăn log / debug / exception leak data
 public class CollectionRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,7 +47,7 @@ public class CollectionRequest {
     private Collector collector;
 
     @Column(name = "status", length = 20)
-    private String status;
+    private CollectionRequestStatus status;
 
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;

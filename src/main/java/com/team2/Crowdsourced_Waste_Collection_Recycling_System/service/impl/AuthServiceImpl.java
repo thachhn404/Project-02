@@ -153,6 +153,8 @@ public class AuthServiceImpl implements AuthService {
         return AuthenticationResponse.builder()
                 .token(token)
                 .authenticated(true)
+                .email(user.getEmail())
+                .fullName(user.getFullName())
                 .citizenId(citizenId)
                 .collectorId(collectorId)
                 .enterpriseId(enterpriseId)

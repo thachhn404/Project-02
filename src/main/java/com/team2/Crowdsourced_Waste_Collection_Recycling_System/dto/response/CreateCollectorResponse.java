@@ -18,4 +18,9 @@ public class CreateCollectorResponse {
     Integer enterpriseId;
     String email;
     String fullName;
+    String phone;
+    String employeeCode;
+    String status;
+    String vehicleType;
+    String vehiclePlate;
 }

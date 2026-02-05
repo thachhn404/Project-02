@@ -1,6 +1,7 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,187 +34,192 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     List<CollectionRequest> findByEnterprise_Id(Integer enterpriseId);
 
     Optional<CollectionRequest> findByRequestCode(String requestCode);
-    boolean existsByIdAndEnterprise_IdAndStatus(Integer id, Integer enterpriseId, String status);
+
+    boolean existsByIdAndEnterprise_IdAndStatus(Integer id, Integer enterpriseId, CollectionRequestStatus status);
 
     /**
-     * Enterprise accept request: pending -> accepted_enterprise (chỉ khi chưa gán collector).
+     * Kiểm tra xem đã có CollectionRequest cho WasteReport này chưa
+     */
+    boolean existsByReport_Id(Integer reportId);
+
+    /**
+     * Enterprise accept request: pending -> accepted_enterprise (chỉ khi chưa gán
+     * collector).
      */
     @Modifying
     @Query(value = """
-        UPDATE collection_requests
-        SET status = 'accepted_enterprise',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = :requestId
-          AND enterprise_id = :enterpriseId
-          AND collector_id IS NULL
-          AND status = 'pending'
-    """, nativeQuery = true)
+                UPDATE collection_requests
+                SET status = 'accepted_enterprise',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :requestId
+                  AND enterprise_id = :enterpriseId
+                  AND collector_id IS NULL
+                  AND status = 'pending'
+            """, nativeQuery = true)
     int acceptByEnterprise(
             @Param("requestId") Integer requestId,
-            @Param("enterpriseId") Integer enterpriseId
-    );
+            @Param("enterpriseId") Integer enterpriseId);
 
     @Modifying
     @Query(value = """
-        UPDATE collection_requests
-        SET status = 'accepted_enterprise',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE request_code = :requestCode
-          AND enterprise_id = :enterpriseId
-          AND collector_id IS NULL
-          AND status = 'pending'
-    """, nativeQuery = true)
+                UPDATE collection_requests
+                SET status = 'accepted_enterprise',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE request_code = :requestCode
+                  AND enterprise_id = :enterpriseId
+                  AND collector_id IS NULL
+                  AND status = 'pending'
+            """, nativeQuery = true)
     int acceptByEnterpriseByRequestCode(
             @Param("requestCode") String requestCode,
-            @Param("enterpriseId") Integer enterpriseId
-    );
+            @Param("enterpriseId") Integer enterpriseId);
+
     /**
-     * Chỉ cho phép gán khi request thuộc enterprise, chưa được gán collector, và đang ở trạng thái accepted_enterprise.
+     * Chỉ cho phép gán khi request thuộc enterprise, chưa được gán collector, và
+     * đang ở trạng thái accepted_enterprise.
      */
     @Modifying
     @Query(value = """
-        UPDATE collection_requests
-        SET collector_id = :collectorId,
-            status = 'assigned',
-            assigned_at = CURRENT_TIMESTAMP,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = :requestId
-          AND enterprise_id = :enterpriseId
-          AND collector_id IS NULL
-          AND status = 'accepted_enterprise'
-    """, nativeQuery = true)
+                UPDATE collection_requests
+                SET collector_id = :collectorId,
+                    status = 'assigned',
+                    assigned_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :requestId
+                  AND enterprise_id = :enterpriseId
+                  AND collector_id IS NULL
+                  AND status = 'accepted_enterprise'
+            """, nativeQuery = true)
     int assignCollector(
             @Param("requestId") Integer requestId,
             @Param("collectorId") Integer collectorId,
-            @Param("enterpriseId") Integer enterpriseId
-    );
+            @Param("enterpriseId") Integer enterpriseId);
 
     @Modifying
     @Query(value = """
-        UPDATE collection_requests
-        SET collector_id = :collectorId,
-            status = 'assigned',
-            assigned_at = CURRENT_TIMESTAMP,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE request_code = :requestCode
-          AND enterprise_id = :enterpriseId
-          AND collector_id IS NULL
-          AND status = 'accepted_enterprise'
-    """, nativeQuery = true)
+                UPDATE collection_requests
+                SET collector_id = :collectorId,
+                    status = 'assigned',
+                    assigned_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE request_code = :requestCode
+                  AND enterprise_id = :enterpriseId
+                  AND collector_id IS NULL
+                  AND status = 'accepted_enterprise'
+            """, nativeQuery = true)
     int assignCollectorByRequestCode(
             @Param("requestCode") String requestCode,
             @Param("collectorId") Integer collectorId,
-            @Param("enterpriseId") Integer enterpriseId
-    );
+            @Param("enterpriseId") Integer enterpriseId);
 
     /**
      * Lấy danh sách task của collector
      */
     @Query(value = """
-        SELECT
-            cr.id AS id,
-            cr.request_code AS requestCode,
-            cr.status AS status,
-            cr.assigned_at AS assignedAt,
-            cr.created_at AS createdAt,
-            cr.updated_at AS updatedAt
-        FROM collection_requests cr
-        WHERE cr.collector_id = :collectorId
-        ORDER BY
-            CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
-            cr.assigned_at DESC,
-            cr.id DESC
-    """, nativeQuery = true)
+                SELECT
+                    cr.id AS id,
+                    cr.request_code AS requestCode,
+                    cr.status AS status,
+                    cr.assigned_at AS assignedAt,
+                    cr.created_at AS createdAt,
+                    cr.updated_at AS updatedAt
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                ORDER BY
+                    CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
+                    cr.assigned_at DESC,
+                    cr.id DESC
+            """, nativeQuery = true)
     List<CollectorTaskView> findTasksForCollector(@Param("collectorId") Integer collectorId);
 
     /**
      * Lấy danh sách task của collector theo trạng thái.
      */
     @Query(value = """
-        SELECT
-            cr.id AS id,
-            cr.request_code AS requestCode,
-            cr.status AS status,
-            cr.assigned_at AS assignedAt,
-            cr.created_at AS createdAt,
-            cr.updated_at AS updatedAt
-        FROM collection_requests cr
-        WHERE cr.collector_id = :collectorId
-          AND cr.status = :status
-        ORDER BY
-            CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
-            cr.assigned_at DESC,
-            cr.id DESC
-    """, nativeQuery = true)
+                SELECT
+                    cr.id AS id,
+                    cr.request_code AS requestCode,
+                    cr.status AS status,
+                    cr.assigned_at AS assignedAt,
+                    cr.created_at AS createdAt,
+                    cr.updated_at AS updatedAt
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status = :status
+                ORDER BY
+                    CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
+                    cr.assigned_at DESC,
+                    cr.id DESC
+            """, nativeQuery = true)
     List<CollectorTaskView> findTasksForCollectorByStatus(
             @Param("collectorId") Integer collectorId,
-            @Param("status") String status
-    );
+            @Param("status") String status);
 
     /**
-     * Danh sách task mặc định cho Collector: hiển thị ASSIGNED, ACCEPTED_COLLECTOR và ON_THE_WAY
+     * Danh sách task mặc định cho Collector: hiển thị ASSIGNED, ACCEPTED_COLLECTOR
+     * và ON_THE_WAY
      */
     @Query(value = """
-        SELECT
-            cr.id AS id,
-            cr.request_code AS requestCode,
-            cr.status AS status,
-            cr.assigned_at AS assignedAt,
-            cr.created_at AS createdAt,
-            cr.updated_at AS updatedAt
-        FROM collection_requests cr
-        WHERE cr.collector_id = :collectorId
-          AND cr.status IN ('assigned', 'accepted_collector', 'on_the_way')
-        ORDER BY
-            CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
-            cr.assigned_at DESC,
-            cr.id DESC
-    """, nativeQuery = true)
+                SELECT
+                    cr.id AS id,
+                    cr.request_code AS requestCode,
+                    cr.status AS status,
+                    cr.assigned_at AS assignedAt,
+                    cr.created_at AS createdAt,
+                    cr.updated_at AS updatedAt
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status IN ('assigned', 'accepted_collector', 'on_the_way')
+                ORDER BY
+                    CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
+                    cr.assigned_at DESC,
+                    cr.id DESC
+            """, nativeQuery = true)
     List<CollectorTaskView> findActiveTasksForCollector(@Param("collectorId") Integer collectorId);
-
 
     Optional<CollectionRequest> findByIdAndCollector_Id(Integer id, Integer collectorId);
 
     /**
-     * Cập nhật trạng thái theo điều kiện (atomic) - dùng khi muốn update bằng query thay vì load entity.
+     * Cập nhật trạng thái theo điều kiện (atomic) - dùng khi muốn update bằng query
+     * thay vì load entity.
      * Ví dụ: assigned -> on_the_way.
      */
     @Modifying
     @Query("""
-        UPDATE CollectionRequest cr
-        SET cr.status = :newStatus,
-            cr.startedAt = :time,
-            cr.updatedAt = :time
-        WHERE cr.id = :id
-          AND cr.collector.id = :collectorId
-          AND cr.status = :currentStatus
-    """)
+                UPDATE CollectionRequest cr
+                SET cr.status = :newStatus,
+                    cr.startedAt = :time,
+                    cr.updatedAt = :time
+                WHERE cr.id = :id
+                  AND cr.collector.id = :collectorId
+                  AND cr.status = :currentStatus
+            """)
     int updateStatusIfMatch(@Param("id") Integer id,
-                            @Param("collectorId") Integer collectorId,
-                            @Param("currentStatus") String currentStatus,
-                            @Param("newStatus") String newStatus,
-                            @Param("time") LocalDateTime time);
+            @Param("collectorId") Integer collectorId,
+            @Param("currentStatus") CollectionRequestStatus currentStatus,
+            @Param("newStatus") CollectionRequestStatus newStatus,
+            @Param("time") LocalDateTime time);
 
     @Modifying
     @Query("""
-        UPDATE CollectionRequest cr
-        SET cr.status = 'accepted_collector',
-            cr.acceptedAt = :time,
-            cr.updatedAt = :time
-        WHERE cr.id = :id
-          AND cr.collector.id = :collectorId
-          AND cr.status = 'assigned'
-    """)
+                UPDATE CollectionRequest cr
+                SET cr.status = 'accepted_collector',
+                    cr.acceptedAt = :time,
+                    cr.updatedAt = :time
+                WHERE cr.id = :id
+                  AND cr.collector.id = :collectorId
+                  AND cr.status = 'assigned'
+            """)
     int acceptTask(
             @Param("id") Integer id,
             @Param("collectorId") Integer collectorId,
-            @Param("time") LocalDateTime time
-    );
+            @Param("time") LocalDateTime time);
 
     /**
      * Từ chối nhiệm vụ theo hướng atomic:
      * - Chỉ khi request đang assigned và thuộc collector hiện tại
-     * - Set status = accepted_enterprise, lưu lý do, và unassign collector để enterprise gán lại
+     * - Set status = accepted_enterprise, lưu lý do, và unassign collector để
+     * enterprise gán lại
      */
     @Modifying
     @Query("update CollectionRequest cr " +
@@ -228,8 +234,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     int rejectTask(
             @Param("id") Integer id,
             @Param("collectorId") Integer collectorId,
-            @Param("reason") String reason
-    );
+            @Param("reason") String reason);
 
     /**
      * Hoàn thành nhiệm vụ theo hướng atomic:
@@ -238,17 +243,16 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
      */
     @Modifying
     @Query("""
-        UPDATE CollectionRequest cr
-        SET cr.status = 'collected',
-            cr.collectedAt = :time,
-            cr.updatedAt = :time
-        WHERE cr.id = :id
-          AND cr.collector.id = :collectorId
-          AND cr.status = 'on_the_way'
-    """)
+                UPDATE CollectionRequest cr
+                SET cr.status = 'collected',
+                    cr.collectedAt = :time,
+                    cr.updatedAt = :time
+                WHERE cr.id = :id
+                  AND cr.collector.id = :collectorId
+                  AND cr.status = 'on_the_way'
+            """)
     int completeTask(
             @Param("id") Integer id,
             @Param("collectorId") Integer collectorId,
-            @Param("time") LocalDateTime time
-    );
+            @Param("time") LocalDateTime time);
 }
