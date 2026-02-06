@@ -22,20 +22,11 @@ public class WasteType {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    // @Column(name = "description", length = 500)
-    // private String description;
-
     @Column(name = "base_points")
     private Integer basePoints;
 
     @Column(name = "is_recyclable")
     private Boolean isRecyclable;
-
-    // @Column(name = "handling_instructions", length = 1000)
-    // private String handlingInstructions;
-
-    // @Column(name = "icon_url", length = 500)
-    // private String iconUrl;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
