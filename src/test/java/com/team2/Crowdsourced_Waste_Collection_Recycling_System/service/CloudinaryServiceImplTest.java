@@ -79,4 +79,30 @@ class CloudinaryServiceImplTest {
 
         assertEquals("collectorReport", optionsCaptor.getValue().get("folder"));
     }
+
+    @Test
+    void uploadImage_withReportAliasModule_putsReportsFolder() throws Exception {
+        when(cloudinary.uploader()).thenReturn(uploader);
+        when(uploader.upload(any(byte[].class), optionsCaptor.capture()))
+                .thenReturn(Map.of("public_id", "p3", "secure_url", "https://example.com/p3"));
+
+        CloudinaryServiceImpl service = new CloudinaryServiceImpl(
+                cloudinary,
+                "",
+                "cloud",
+                "key",
+                "secret"
+        );
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "a.png",
+                "image/png",
+                "x".getBytes()
+        );
+
+        service.uploadImage(file, "report");
+
+        assertEquals("reports", optionsCaptor.getValue().get("folder"));
+    }
 }

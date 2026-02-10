@@ -87,7 +87,12 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 .toLowerCase(Locale.ROOT)
                 .replace('-', '_')
                 .replace(' ', '_');
-        if ("reports".equals(normalized)) {
+        if ("reports".equals(normalized)
+                || "report".equals(normalized)
+                || "waste_report".equals(normalized)
+                || "waste_reports".equals(normalized)
+                || "report_image".equals(normalized)
+                || "report_images".equals(normalized)) {
             return "reports";
         }
         if ("requests".equals(normalized)) {

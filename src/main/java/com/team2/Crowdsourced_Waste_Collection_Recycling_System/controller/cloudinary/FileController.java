@@ -25,7 +25,7 @@ public class FileController {
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<CloudinaryResponse> uploadImage(
             @RequestPart("file") MultipartFile file,
-            @RequestParam(value = "module", required = false) String module
+            @RequestParam(value = "module", defaultValue = "reports") String module
     ) {
         try {
             return ApiResponse.<CloudinaryResponse>builder()
