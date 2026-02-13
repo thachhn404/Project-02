@@ -21,6 +21,14 @@ public interface WasteReportService {
 
     CitizenReportResultResponse getMyReportResult(Integer reportId, String citizenEmail);
 
+    List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenRewardHistoryResponse> getRewardHistory(String citizenEmail, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
+
+    List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenLeaderboardResponse> getLeaderboard(String region);
+
+    com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse createComplaint(com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateComplaintRequest request, String citizenEmail);
+
+    List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse> getComplaints(String citizenEmail);
+
     List<WasteCategoryResponse> getWasteCategories();
 }
 

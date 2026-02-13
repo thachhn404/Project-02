@@ -2,6 +2,14 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.UpdateWasteReportRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateComplaintRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenLeaderboardResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenRewardHistoryResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Feedback;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.PointTransaction;
+
+
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenReportResultItemResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenReportResultResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CloudinaryResponse;
@@ -18,9 +26,11 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteRepo
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppException;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.mapper.CitizenFeatureMapper;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.feedback.FeedbackRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.profile.CitizenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.reward.PointTransactionRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.ReportImageRepository;
@@ -34,8 +44,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -49,6 +59,7 @@ import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class WasteReportServiceImpl implements WasteReportService {
@@ -84,6 +95,9 @@ public class WasteReportServiceImpl implements WasteReportService {
     private final CollectorReportRepository collectorReportRepository;
     private final CollectorReportItemRepository collectorReportItemRepository;
     private final PointTransactionRepository pointTransactionRepository;
+
+    private final FeedbackRepository feedbackRepository;
+    private final CitizenFeatureMapper citizenFeatureMapper;
 
     @Override
     @Transactional
@@ -361,14 +375,103 @@ public class WasteReportServiceImpl implements WasteReportService {
             }
         }
 
+        String classificationResult = totalPoint > 0 ? "CORRECT" : "INCORRECT";
+
         return CitizenReportResultResponse.builder()
                 .reportId(report.getId())
                 .reportCode(report.getReportCode())
                 .status(mapCitizenStatus(report.getStatus()))
                 .totalPoint(totalPoint)
+                .classificationResult(classificationResult)
                 .collectedAt(collectorReport.getCollectedAt())
                 .items(itemResponses)
                 .build();
+    }
+
+    @Override
+    public List<CitizenRewardHistoryResponse> getRewardHistory(String citizenEmail, LocalDateTime startDate, LocalDateTime endDate) {
+        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        List<PointTransaction> transactions = pointTransactionRepository.findByCitizenId(citizen.getId());
+
+        if (startDate != null && endDate != null) {
+            transactions = transactions.stream()
+                    .filter(tx -> {
+                        LocalDateTime created = tx.getCreatedAt();
+                        return (created.isEqual(startDate) || created.isAfter(startDate)) &&
+                                (created.isEqual(endDate) || created.isBefore(endDate));
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        return transactions.stream()
+                .map(citizenFeatureMapper::toCitizenRewardHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CitizenLeaderboardResponse> getLeaderboard(String region) {
+        // Simple implementation: fetch all citizens in region, sort by totalPoints
+        // For larger scale, should use a dedicated Leaderboard entity updated by batch jobs
+        List<Citizen> citizens = citizenRepository.findAll().stream()
+                .filter(c -> region == null || region.isBlank() ||
+                        (c.getWard() != null && c.getWard().equalsIgnoreCase(region)) ||
+                        (c.getCity() != null && c.getCity().equalsIgnoreCase(region)))
+                .sorted((c1, c2) -> {
+                    int p1 = c1.getTotalPoints() != null ? c1.getTotalPoints() : 0;
+                    int p2 = c2.getTotalPoints() != null ? c2.getTotalPoints() : 0;
+                    // Sort desc, if equal points, sort by id (asc) as tie-breaker (older first)
+                    if (p1 != p2) return p2 - p1;
+                    return c1.getId() - c2.getId();
+                })
+                .collect(Collectors.toList());
+
+        List<CitizenLeaderboardResponse> leaderboard = new ArrayList<>();
+        int rank = 1;
+        for (Citizen c : citizens) {
+            CitizenLeaderboardResponse resp = citizenFeatureMapper.toCitizenLeaderboardResponse(c);
+            resp.setRank(rank++);
+            leaderboard.add(resp);
+        }
+        return leaderboard;
+    }
+
+    @Override
+    @Transactional
+    public ComplaintResponse createComplaint(CreateComplaintRequest request, String citizenEmail) {
+        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        WasteReport report = wasteReportRepository.findById(request.getReportId())
+                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
+
+        if (!report.getCitizen().getId().equals(citizen.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Feedback feedback = citizenFeatureMapper.toFeedback(request);
+        feedback.setCitizen(citizen);
+        feedback.setFeedbackCode("FB-" + System.currentTimeMillis());
+        
+        CollectionRequest collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
+        feedback.setCollectionRequest(collectionRequest);
+        
+        Feedback saved = feedbackRepository.save(feedback);
+
+        return citizenFeatureMapper.toComplaintResponse(saved);
+    }
+
+    @Override
+    public List<ComplaintResponse> getComplaints(String citizenEmail) {
+        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return feedbackRepository.findAll().stream()
+                .filter(f -> f.getCitizen().getId().equals(citizen.getId()))
+                .map(citizenFeatureMapper::toComplaintResponse)
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .collect(Collectors.toList());
     }
 
     @Override

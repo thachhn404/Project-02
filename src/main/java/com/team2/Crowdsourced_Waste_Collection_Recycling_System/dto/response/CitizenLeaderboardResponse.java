@@ -7,21 +7,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CitizenReportResultResponse {
-    Integer reportId;
-    String reportCode;
-    String status;
+public class CitizenLeaderboardResponse {
+    Integer rank;
+    Integer citizenId;
     Integer totalPoint;
-    String classificationResult;
-    LocalDateTime collectedAt;
-    List<CitizenReportResultItemResponse> items;
 }
-

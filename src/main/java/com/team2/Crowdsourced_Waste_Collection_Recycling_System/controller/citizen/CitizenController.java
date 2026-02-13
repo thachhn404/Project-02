@@ -3,12 +3,17 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.citi
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.UpdateWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenLeaderboardResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenReportResultResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateComplaintRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenRewardHistoryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteCategoryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,8 +26,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -107,6 +114,58 @@ public class CitizenController {
         return ResponseEntity.ok(ApiResponse.<CitizenReportResultResponse>builder()
                 .result(result)
                 .message("Lấy kết quả thu gom thành công")
+                .build());
+    }
+
+    @GetMapping("/rewards/history")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<ApiResponse<List<CitizenRewardHistoryResponse>>> getRewardHistory(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String citizenEmail = authentication.getName();
+
+        List<CitizenRewardHistoryResponse> history = wasteReportService.getRewardHistory(citizenEmail, startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.<List<CitizenRewardHistoryResponse>>builder()
+                .result(history)
+                .message("Lấy lịch sử điểm thưởng thành công")
+                .build());
+    }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<ApiResponse<List<CitizenLeaderboardResponse>>> getLeaderboard(
+            @RequestParam(required = false) String region) {
+        List<CitizenLeaderboardResponse> leaderboard = wasteReportService.getLeaderboard(region);
+        return ResponseEntity.ok(ApiResponse.<List<CitizenLeaderboardResponse>>builder()
+                .result(leaderboard)
+                .message("Lấy bảng xếp hạng thành công")
+                .build());
+    }
+
+    @PostMapping("/complaints")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<ApiResponse<ComplaintResponse>> createComplaint(
+            @Valid @org.springframework.web.bind.annotation.RequestBody CreateComplaintRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String citizenEmail = authentication.getName();
+
+        ComplaintResponse response = wasteReportService.createComplaint(request, citizenEmail);
+        return ResponseEntity.ok(ApiResponse.<ComplaintResponse>builder()
+                .result(response)
+                .message("Tạo khiếu nại thành công")
+                .build());
+    }
+
+    @GetMapping("/complaints")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<ApiResponse<List<ComplaintResponse>>> getComplaints() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String citizenEmail = authentication.getName();
+
+        List<ComplaintResponse> complaints = wasteReportService.getComplaints(citizenEmail);
+        return ResponseEntity.ok(ApiResponse.<List<ComplaintResponse>>builder()
+                .result(complaints)
+                .message("Lấy danh sách khiếu nại thành công")
                 .build());
     }
 

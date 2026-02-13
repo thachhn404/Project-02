@@ -8,20 +8,17 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CitizenReportResultResponse {
+public class ComplaintResponse {
+    Integer id;
     Integer reportId;
-    String reportCode;
+    String type;
+    String content;
     String status;
-    Integer totalPoint;
-    String classificationResult;
-    LocalDateTime collectedAt;
-    List<CitizenReportResultItemResponse> items;
+    LocalDateTime createdAt;
 }
-
