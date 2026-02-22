@@ -45,14 +45,14 @@ public class EnterpriseController {
     /**
      * Giao một yêu cầu thu gom cho một nhân viên (Collector).
      */
-    @PostMapping("/{requestCode}/assign")
+    @PostMapping("/{requestId}/assign")
     @PreAuthorize("hasRole('ENTERPRISE')")
     public ApiResponse<AssignCollectorResponse> assignCollector(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String requestCode,
+            @PathVariable Integer requestId,
             @RequestBody AssignCollectorRequest request) {
         Integer enterpriseId = extractEnterpriseId(jwt);
-        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, requestCode,
+        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, requestId,
                 request.getCollectorId());
         return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
     }

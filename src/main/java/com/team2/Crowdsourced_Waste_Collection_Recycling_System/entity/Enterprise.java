@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,15 +30,19 @@ public class Enterprise {
     private Integer id;
 
     @Column(name = "name", nullable = false, length = 255)
+    @Nationalized
     private String name;
 
     @Column(name = "address", length = 500)
+    @Nationalized
     private String address;
 
     @Column(name = "ward", length = 100)
+    @Nationalized
     private String ward;
 
     @Column(name = "city", length = 100)
+    @Nationalized
     private String city;
 
     @Column(name = "phone", length = 20)

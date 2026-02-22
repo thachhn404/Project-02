@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Entity
 @Table(name = "citizens")
@@ -27,21 +28,25 @@ public class Citizen {
     private String email;
 
     @Column(name = "full_name", length = 255)
+    @Nationalized
     private String fullName;
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @Column(name = "address", length = 500)
+    @Nationalized
     private String address;
 
     @Column(name = "phone", length = 20)
     private String phone;
 
     @Column(name = "ward", length = 100)
+    @Nationalized
     private String ward;
 
     @Column(name = "city", length = 100)
+    @Nationalized
     private String city;
 
     @Column(name = "total_points")

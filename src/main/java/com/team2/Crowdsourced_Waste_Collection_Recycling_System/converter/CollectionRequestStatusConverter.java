@@ -12,7 +12,7 @@ public class CollectionRequestStatusConverter implements AttributeConverter<Coll
         if (attribute == null) {
             return null;
         }
-        return attribute.name();
+        return attribute.name().toLowerCase();
     }
 
     @Override

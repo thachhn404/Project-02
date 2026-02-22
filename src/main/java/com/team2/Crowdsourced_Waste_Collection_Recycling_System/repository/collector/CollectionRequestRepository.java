@@ -2,6 +2,8 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.coll
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -41,6 +43,8 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
      * Kiểm tra xem đã có CollectionRequest cho WasteReport này chưa
      */
     boolean existsByReport_Id(Integer reportId);
+
+    Optional<CollectionRequest> findByReport_Id(Integer reportId);
 
     /**
      * Enterprise accept request: pending -> accepted_enterprise (chỉ khi chưa gán
@@ -82,13 +86,13 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     @Query(value = """
                 UPDATE collection_requests
                 SET collector_id = :collectorId,
-                    status = 'assigned',
-                    assigned_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
+                status = 'assigned',
+                assigned_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
                 WHERE id = :requestId
                   AND enterprise_id = :enterpriseId
                   AND collector_id IS NULL
-                  AND status = 'accepted_enterprise'
+                  AND (status = 'accepted_enterprise' OR status = 'pending')
             """, nativeQuery = true)
     int assignCollector(
             @Param("requestId") Integer requestId,
@@ -99,22 +103,19 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     @Query(value = """
                 UPDATE collection_requests
                 SET collector_id = :collectorId,
-                    status = 'assigned',
-                    assigned_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
+                status = 'assigned',
+                assigned_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
                 WHERE request_code = :requestCode
                   AND enterprise_id = :enterpriseId
                   AND collector_id IS NULL
-                  AND status = 'accepted_enterprise'
+                  AND (status = 'accepted_enterprise' OR status = 'pending')
             """, nativeQuery = true)
     int assignCollectorByRequestCode(
             @Param("requestCode") String requestCode,
             @Param("collectorId") Integer collectorId,
             @Param("enterpriseId") Integer enterpriseId);
 
-    /**
-     * Lấy danh sách task của collector
-     */
     @Query(value = """
                 SELECT
                     cr.id AS id,
@@ -130,7 +131,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.assigned_at DESC,
                     cr.id DESC
             """, nativeQuery = true)
-    List<CollectorTaskView> findTasksForCollector(@Param("collectorId") Integer collectorId);
+    Page<CollectorTaskView> findTasksForCollector(@Param("collectorId") Integer collectorId, Pageable pageable);
 
     /**
      * Lấy danh sách task của collector theo trạng thái.
@@ -151,9 +152,10 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.assigned_at DESC,
                     cr.id DESC
             """, nativeQuery = true)
-    List<CollectorTaskView> findTasksForCollectorByStatus(
+    Page<CollectorTaskView> findTasksForCollectorByStatus(
             @Param("collectorId") Integer collectorId,
-            @Param("status") String status);
+            @Param("status") String status,
+            Pageable pageable);
 
     /**
      * Danh sách task mặc định cho Collector: hiển thị ASSIGNED, ACCEPTED_COLLECTOR
@@ -169,13 +171,119 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.updated_at AS updatedAt
                 FROM collection_requests cr
                 WHERE cr.collector_id = :collectorId
-                  AND cr.status IN ('assigned', 'accepted_collector', 'on_the_way')
+                  AND cr.status IN ('assigned', 'accepted_collector', 'on_the_way', 'collected')
                 ORDER BY
                     CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
                     cr.assigned_at DESC,
                     cr.id DESC
             """, nativeQuery = true)
-    List<CollectorTaskView> findActiveTasksForCollector(@Param("collectorId") Integer collectorId);
+    Page<CollectorTaskView> findActiveTasksForCollector(@Param("collectorId") Integer collectorId, Pageable pageable);
+
+    interface CollectorWorkHistoryView {
+        Integer getId();
+
+        String getRequestCode();
+
+        String getStatus();
+
+        String getAddress();
+
+        String getWasteTypeCode();
+
+        String getWasteTypeName();
+
+        Integer getEnterpriseId();
+
+        String getEnterpriseName();
+
+        java.time.LocalDateTime getStartedAt();
+
+        java.time.LocalDateTime getCollectedAt();
+
+        java.time.LocalDateTime getCompletedAt();
+
+        java.time.LocalDateTime getUpdatedAt();
+    }
+
+    interface CollectorMonthlyCompletedCountView {
+        Integer getYear();
+
+        Integer getMonth();
+
+        Long getTotal();
+    }
+
+    @Query(value = """
+                SELECT
+                    cr.id AS id,
+                    cr.request_code AS requestCode,
+                    cr.status AS status,
+                    wr.address AS address,
+                    'RECYCLABLE' AS wasteTypeCode,
+                    'Recyclable Waste' AS wasteTypeName,
+                    e.id AS enterpriseId,
+                    e.name AS enterpriseName,
+                    cr.started_at AS startedAt,
+                    cr.collected_at AS collectedAt,
+                    cr.completed_at AS completedAt,
+                    cr.updated_at AS updatedAt
+                FROM collection_requests cr
+                JOIN waste_reports wr ON cr.report_id = wr.id
+                JOIN enterprise e ON cr.enterprise_id = e.id
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status IN ('on_the_way', 'collected', 'completed', 'rejected')
+                ORDER BY
+                    COALESCE(cr.completed_at, cr.collected_at, cr.started_at, cr.updated_at) DESC,
+                    cr.id DESC
+            """, nativeQuery = true)
+    Page<CollectorWorkHistoryView> findWorkHistoryForCollector(@Param("collectorId") Integer collectorId, Pageable pageable);
+
+    @Query(value = """
+                SELECT
+                    cr.id AS id,
+                    cr.request_code AS requestCode,
+                    cr.status AS status,
+                    wr.address AS address,
+                    'RECYCLABLE' AS wasteTypeCode,
+                    'Recyclable Waste' AS wasteTypeName,
+                    e.id AS enterpriseId,
+                    e.name AS enterpriseName,
+                    cr.started_at AS startedAt,
+                    cr.collected_at AS collectedAt,
+                    cr.completed_at AS completedAt,
+                    cr.updated_at AS updatedAt
+                FROM collection_requests cr
+                JOIN waste_reports wr ON cr.report_id = wr.id
+                JOIN enterprise e ON cr.enterprise_id = e.id
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status = :status
+                ORDER BY
+                    COALESCE(cr.completed_at, cr.collected_at, cr.started_at, cr.updated_at) DESC,
+                    cr.id DESC
+            """, nativeQuery = true)
+    Page<CollectorWorkHistoryView> findWorkHistoryForCollectorByStatus(
+            @Param("collectorId") Integer collectorId,
+            @Param("status") String status,
+            Pageable pageable);
+
+    long countByCollector_IdAndStatus(Integer collectorId, CollectionRequestStatus status);
+
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS year,
+                    MONTH(COALESCE(cr.completed_at, cr.collected_at)) AS month,
+                    COUNT(*) AS total
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status IN ('collected', 'completed')
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND YEAR(COALESCE(cr.completed_at, cr.collected_at)) = :year
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)), MONTH(COALESCE(cr.completed_at, cr.collected_at))
+                ORDER BY year DESC, month DESC
+            """, nativeQuery = true)
+    List<CollectorMonthlyCompletedCountView> countCompletedByMonth(
+            @Param("collectorId") Integer collectorId,
+            @Param("year") Integer year);
 
     Optional<CollectionRequest> findByIdAndCollector_Id(Integer id, Integer collectorId);
 
@@ -252,6 +360,26 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                   AND cr.status = 'on_the_way'
             """)
     int completeTask(
+            @Param("id") Integer id,
+            @Param("collectorId") Integer collectorId,
+            @Param("time") LocalDateTime time);
+
+    /**
+     * Xác nhận hoàn tất thu gom:
+     * - Chỉ khi request đang collected và thuộc collector hiện tại
+     * - Set status = completed, set completedAt
+     */
+    @Modifying
+    @Query("""
+                UPDATE CollectionRequest cr
+                SET cr.status = 'completed',
+                    cr.completedAt = :time,
+                    cr.updatedAt = :time
+                WHERE cr.id = :id
+                  AND cr.collector.id = :collectorId
+                  AND cr.status = 'collected'
+            """)
+    int confirmCompleted(
             @Param("id") Integer id,
             @Param("collectorId") Integer collectorId,
             @Param("time") LocalDateTime time);

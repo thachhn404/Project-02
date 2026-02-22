@@ -18,13 +18,14 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportIma
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.RolePermission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteCategory;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteType;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.CitizenRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.ReportImageRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.WasteReportRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.citizen.WasteTypeRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteUnit;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.profile.CitizenRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteCategoryRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.ReportImageRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionTrackingRepository;
@@ -56,7 +57,7 @@ public class DataSeeder {
             RoleRepository roleRepository,
             UserRepository userRepository,
             CitizenRepository citizenRepository,
-            WasteTypeRepository wasteTypeRepository,
+            WasteCategoryRepository wasteCategoryRepository,
             WasteReportRepository wasteReportRepository,
             ReportImageRepository reportImageRepository,
             EnterpriseRepository enterpriseRepository,
@@ -137,21 +138,13 @@ public class DataSeeder {
                     .map(u -> createCollectorIfNotFound(collectorRepository, u, enterprise))
                     .orElseThrow();
 
-            WasteType household = createWasteTypeIfNotFound(wasteTypeRepository, "HOUSEHOLD", "Household Waste",
-                    "HOUSEHOLD", 10, false);
-            WasteType recyclable = createWasteTypeIfNotFound(wasteTypeRepository, "RECYCLABLE", "Recyclable Waste",
-                    "RECYCLABLE", 20, true);
-            WasteType hazardous = createWasteTypeIfNotFound(wasteTypeRepository, "HAZARDOUS", "Hazardous Waste",
-                    "HAZARDOUS", 30, false);
+            seedWasteCategories(wasteCategoryRepository);
 
             seedCitizenAndEnterpriseFlow(
                     citizen1,
                     enterprise,
                     collector1,
                     collector2,
-                    household,
-                    recyclable,
-                    hazardous,
                     wasteReportRepository,
                     reportImageRepository,
                     collectionRequestRepository,
@@ -162,6 +155,51 @@ public class DataSeeder {
                     pointTransactionRepository,
                     feedbackRepository);
         };
+    }
+
+    private void seedWasteCategories(WasteCategoryRepository wasteCategoryRepository) {
+        LocalDateTime now = LocalDateTime.now();
+
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Giấy", WasteUnit.KG, new BigDecimal("2250.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Báo", WasteUnit.KG, new BigDecimal("3600.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Giấy, hồ sơ", WasteUnit.KG, new BigDecimal("3150.0000"),
+                now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Giấy tập", WasteUnit.KG, new BigDecimal("3600.0000"),
+                now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Lon bia", WasteUnit.CAN, new BigDecimal("180.0000"),
+                now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Sắt", WasteUnit.KG, new BigDecimal("3600.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Sắt lon", WasteUnit.KG, new BigDecimal("1440.0000"),
+                now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Inox", WasteUnit.KG, new BigDecimal("5400.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Đồng", WasteUnit.KG, new BigDecimal("67500.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Nhôm", WasteUnit.KG, new BigDecimal("16200.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Chai thủy tinh", WasteUnit.BOTTLE,
+                new BigDecimal("450.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Bao bì, hỗn hợp", WasteUnit.KG, new BigDecimal("1600.0000"),
+                now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Meca", WasteUnit.KG, new BigDecimal("450.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Mủ", WasteUnit.KG, new BigDecimal("3600.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Mủ bình", WasteUnit.KG, new BigDecimal("4500.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Mủ tôn", WasteUnit.KG, new BigDecimal("1800.0000"), now);
+        createWasteCategoryIfNotFound(wasteCategoryRepository, "Mủ đen", WasteUnit.KG, new BigDecimal("150.0000"), now);
+    }
+
+    private WasteCategory createWasteCategoryIfNotFound(
+            WasteCategoryRepository repo,
+            String name,
+            WasteUnit unit,
+            BigDecimal pointPerUnit,
+            LocalDateTime now) {
+        return repo.findByNameIgnoreCase(name).orElseGet(() -> {
+            WasteCategory category = new WasteCategory();
+            category.setName(name);
+            category.setUnit(unit);
+            category.setPointPerUnit(pointPerUnit);
+            category.setCreatedAt(now);
+            category.setUpdatedAt(now);
+            return repo.save(category);
+        });
     }
 
     private Permission createPermissionIfNotFound(PermissionRepository repo, String code, String name, String module) {
@@ -268,28 +306,11 @@ public class DataSeeder {
         });
     }
 
-    private WasteType createWasteTypeIfNotFound(WasteTypeRepository repo, String code, String name, String category,
-            int basePoints, boolean recyclable) {
-        return repo.findByCode(code).orElseGet(() -> {
-            WasteType wasteType = new WasteType();
-            wasteType.setCode(code);
-            wasteType.setName(name);
-            wasteType.setCategory(category);
-            wasteType.setBasePoints(basePoints);
-            wasteType.setIsRecyclable(recyclable);
-            wasteType.setCreatedAt(LocalDateTime.now());
-            return repo.save(wasteType);
-        });
-    }
-
     private void seedCitizenAndEnterpriseFlow(
             Citizen citizen,
             Enterprise enterprise,
             Collector collector1,
             Collector collector2,
-            WasteType household,
-            WasteType recyclable,
-            WasteType hazardous,
             WasteReportRepository wasteReportRepository,
             ReportImageRepository reportImageRepository,
             CollectionRequestRepository collectionRequestRepository,
@@ -308,21 +329,21 @@ public class DataSeeder {
 
         LocalDateTime now = LocalDateTime.now();
 
-        WasteReport r1 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-001", citizen, household,
+        WasteReport r1 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-001", citizen,
                 "PENDING", now.minusHours(2));
         createReportImageIfMissing(reportImageRepository, r1, "https://example.com/reports/seed-001.jpg");
         ensureCollectionRequest(collectionRequestRepository, "CR-SEED-001", r1, enterprise, null,
                 CollectionRequestStatus.PENDING, null, null,
                 null, null, null, now.minusHours(2), now.minusHours(2));
 
-        WasteReport r2 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-002", citizen, recyclable,
+        WasteReport r2 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-002", citizen,
                 "PENDING", now.minusHours(3));
         createReportImageIfMissing(reportImageRepository, r2, "https://example.com/reports/seed-002.jpg");
         ensureCollectionRequest(collectionRequestRepository, "CR-SEED-002", r2, enterprise, null,
                 CollectionRequestStatus.ACCEPTED_ENTERPRISE,
                 null, null, null, null, null, now.minusHours(3), now.minusHours(1));
 
-        WasteReport r3 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-003", citizen, hazardous,
+        WasteReport r3 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-003", citizen,
                 "PENDING", now.minusHours(4));
         createReportImageIfMissing(reportImageRepository, r3, "https://example.com/reports/seed-003.jpg");
         CollectionRequest cr3 = ensureCollectionRequest(collectionRequestRepository, "CR-SEED-003", r3, enterprise,
@@ -330,7 +351,7 @@ public class DataSeeder {
                 now.minusHours(2), null, null, null, null, now.minusHours(4), now.minusHours(2));
         ensureTrackingIfMissing(collectionTrackingRepository, cr3, collector1, "assigned", now.minusHours(2));
 
-        WasteReport r4 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-004", citizen, household,
+        WasteReport r4 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-004", citizen,
                 "PENDING", now.minusHours(5));
         createReportImageIfMissing(reportImageRepository, r4, "https://example.com/reports/seed-004.jpg");
         CollectionRequest cr4 = ensureCollectionRequest(collectionRequestRepository, "CR-SEED-004", r4, enterprise,
@@ -341,7 +362,7 @@ public class DataSeeder {
         ensureTrackingIfMissing(collectionTrackingRepository, cr4, collector1, "accepted", now.minusHours(3));
         ensureTrackingIfMissing(collectionTrackingRepository, cr4, collector1, "started", now.minusHours(2));
 
-        WasteReport r5 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-005", citizen, recyclable,
+        WasteReport r5 = createWasteReportIfNotFound(wasteReportRepository, "WR-SEED-005", citizen,
                 "COLLECTED", now.minusDays(1));
         createReportImageIfMissing(reportImageRepository, r5, "https://example.com/reports/seed-005.jpg");
         CollectionRequest cr5 = ensureCollectionRequest(collectionRequestRepository, "CR-SEED-005", r5, enterprise,
@@ -361,7 +382,7 @@ public class DataSeeder {
         ensureCollectorReportIfMissing(collectorReportRepository, collectorReportImageRepository, cr5, collector2,
                 now.minusDays(1).plusHours(5));
 
-        PointRule rule = ensurePointRule(pointRuleRepository, enterprise, recyclable, now.minusDays(30));
+        PointRule rule = ensurePointRule(pointRuleRepository, enterprise, now.minusDays(30));
         ensurePointTransaction(pointTransactionRepository, citizen, r5, cr5, rule, now.minusDays(1).plusHours(5));
 
         ensureFeedback(feedbackRepository, citizen, cr5, now.minusDays(1).plusHours(6));
@@ -370,13 +391,14 @@ public class DataSeeder {
     }
 
     private WasteReport createWasteReportIfNotFound(WasteReportRepository repo, String reportCode, Citizen citizen,
-            WasteType wasteType, String status, LocalDateTime createdAt) {
+            String status, LocalDateTime createdAt) {
         return repo.findByReportCode(reportCode).orElseGet(() -> {
             WasteReport report = new WasteReport();
             report.setReportCode(reportCode);
             report.setCitizen(citizen);
-            report.setWasteType(wasteType);
+            report.setWasteType("RECYCLABLE");
             report.setDescription("Seed report " + reportCode);
+            report.setEstimatedWeight(new BigDecimal("1.00"));
             report.setLatitude(new BigDecimal("10.77653000"));
             report.setLongitude(new BigDecimal("106.70098000"));
             report.setAddress("Seed address");
@@ -483,12 +505,10 @@ public class DataSeeder {
         imageRepository.save(img);
     }
 
-    private PointRule ensurePointRule(PointRuleRepository repo, Enterprise enterprise, WasteType wasteType,
-            LocalDateTime createdAt) {
+    private PointRule ensurePointRule(PointRuleRepository repo, Enterprise enterprise, LocalDateTime createdAt) {
         return repo.findByEnterpriseIdAndRuleName(enterprise.getId(), "Seed rule").orElseGet(() -> {
             PointRule rule = new PointRule();
             rule.setEnterprise(enterprise);
-            rule.setWasteType(wasteType);
             rule.setRuleName("Seed rule");
             rule.setRuleType("BASE");
             rule.setBasePoints(50);

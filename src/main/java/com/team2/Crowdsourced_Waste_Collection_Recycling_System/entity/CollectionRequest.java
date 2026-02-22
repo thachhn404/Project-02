@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -50,6 +51,7 @@ public class CollectionRequest {
     private CollectionRequestStatus status;
 
     @Column(name = "rejection_reason", length = 500)
+    @Nationalized
     private String rejectionReason;
 
     @Column(name = "assigned_at")
@@ -66,6 +68,9 @@ public class CollectionRequest {
 
     @Column(name = "collected_at")
     private LocalDateTime collectedAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

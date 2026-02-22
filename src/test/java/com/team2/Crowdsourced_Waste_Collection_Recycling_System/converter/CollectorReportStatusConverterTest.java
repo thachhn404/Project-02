@@ -22,7 +22,7 @@ class CollectorReportStatusConverterTest {
 
     @Test
     void convertToDatabaseColumn_shouldReturnString() {
-        assertEquals("COMPLETED", converter.convertToDatabaseColumn(CollectorReportStatus.COMPLETED));
+        assertEquals("completed", converter.convertToDatabaseColumn(CollectorReportStatus.COMPLETED));
     }
 
     @Test

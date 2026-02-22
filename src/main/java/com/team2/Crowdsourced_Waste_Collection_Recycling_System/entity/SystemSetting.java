@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 
@@ -44,6 +45,7 @@ public class SystemSetting {
     private String category;
 
     @Column(name = "description", length = 500)
+    @Nationalized
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)

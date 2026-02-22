@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -25,9 +26,11 @@ public class Role {
     private String roleCode;
 
     @Column(name = "role_name", nullable = false, length = 50)
+    @Nationalized
     private String roleName;
 
     @Column(name = "description", length = 500)
+    @Nationalized
     private String description;
 
     @Column(name = "is_active")

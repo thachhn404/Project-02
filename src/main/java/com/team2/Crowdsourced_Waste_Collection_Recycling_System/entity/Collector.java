@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.OneToOne;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,6 +44,7 @@ public class Collector {
     private String email;
 
     @Column(name = "full_name", length = 255)
+    @Nationalized
     private String fullName;
 
     @Column(name = "employee_code", length = 50)

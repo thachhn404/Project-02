@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,9 +37,11 @@ public class Leaderboard {
     private Citizen citizen;
 
     @Column(name = "ward", length = 100)
+    @Nationalized
     private String ward;
 
     @Column(name = "city", length = 100)
+    @Nationalized
     private String city;
 
     @Column(name = "period_type", nullable = false, length = 20)

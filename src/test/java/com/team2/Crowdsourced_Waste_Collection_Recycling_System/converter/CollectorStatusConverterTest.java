@@ -22,7 +22,7 @@ class CollectorStatusConverterTest {
 
     @Test
     void convertToDatabaseColumn_shouldReturnString() {
-        assertEquals("AVAILABLE", converter.convertToDatabaseColumn(CollectorStatus.AVAILABLE));
+        assertEquals("available", converter.convertToDatabaseColumn(CollectorStatus.AVAILABLE));
     }
 
     @Test

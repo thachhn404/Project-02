@@ -14,7 +14,8 @@ public enum WasteReportStatus {
     ON_THE_WAY,
     COLLECTED,
     //bi tu choi neu khong hop le
-    REJECTED;
+    REJECTED,
+    TIMED_OUT;
     public static WasteReportStatus fromString(String status) {
         if (status == null)
             return null;

@@ -22,7 +22,7 @@ class CollectionRequestStatusConverterTest {
 
     @Test
     void convertToDatabaseColumn_shouldReturnString() {
-        assertEquals("PENDING", converter.convertToDatabaseColumn(CollectionRequestStatus.PENDING));
+        assertEquals("pending", converter.convertToDatabaseColumn(CollectionRequestStatus.PENDING));
     }
 
     @Test

@@ -16,6 +16,8 @@ import java.util.List;
 public class CollectorReportResponse {
     Integer reportId;
 
+    String reportCode;
+
     Integer collectionRequestId;
 
     Integer collectorId;
@@ -26,7 +28,9 @@ public class CollectorReportResponse {
 
     String collectorNote;
 
-    BigDecimal actualWeight;
+    Integer totalPoint;
+
+    BigDecimal actualWeightRecyclable;
 
     BigDecimal latitude;
 
@@ -37,4 +41,6 @@ public class CollectorReportResponse {
     LocalDateTime createdAt;
 
     List<String> imageUrls;
+
+    List<CollectorReportItemResponse> items;
 }

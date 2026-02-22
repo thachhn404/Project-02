@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,14 +36,11 @@ public class PointRule {
     private Enterprise enterprise;
 
     @Column(name = "rule_name", nullable = false, length = 255)
+    @Nationalized
     private String ruleName;
 
     @Column(name = "rule_type", nullable = false, length = 30)
     private String ruleType;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "waste_type_id")
-    private WasteType wasteType;
 
     @Column(name = "min_weight_kg", precision = 10, scale = 2)
     private BigDecimal minWeightKg;

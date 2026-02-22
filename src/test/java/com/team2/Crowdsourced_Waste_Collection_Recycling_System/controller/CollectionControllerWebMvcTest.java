@@ -3,17 +3,18 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.config.CustomJwtDecoder;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.config.SecurityConfig;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.collector.CollectionController;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorTaskResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorReportService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,9 +34,6 @@ class CollectionControllerWebMvcTest {
     MockMvc mockMvc;
 
     @org.springframework.boot.test.mock.mockito.MockBean
-    CollectionRequestRepository collectionRequestRepository;
-
-    @org.springframework.boot.test.mock.mockito.MockBean
     CollectorService collectorService;
 
     @org.springframework.boot.test.mock.mockito.MockBean
@@ -46,51 +44,69 @@ class CollectionControllerWebMvcTest {
 
     @Test
     void getTasks_default_calls_active_tasks_query() throws Exception {
-        when(collectionRequestRepository.findActiveTasksForCollector(200))
-                .thenReturn(List.of(new TaskView(10, "REQ001", "assigned")));
+        when(collectorService.getTasks(eq(200), isNull(), eq(false), any()))
+                .thenReturn(new PageImpl<>(
+                        List.of(CollectorTaskResponse.builder()
+                                .id(10)
+                                .requestCode("REQ001")
+                                .status("assigned")
+                                .build()),
+                        PageRequest.of(0, 10),
+                        1));
 
         mockMvc.perform(get("/api/collector/collections/tasks")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[0].id").value(10))
-                .andExpect(jsonPath("$.result[0].requestCode").value("REQ001"))
-                .andExpect(jsonPath("$.result[0].status").value("assigned"));
+                .andExpect(jsonPath("$.result.content[0].id").value(10))
+                .andExpect(jsonPath("$.result.content[0].requestCode").value("REQ001"))
+                .andExpect(jsonPath("$.result.content[0].status").value("assigned"));
 
-        verify(collectionRequestRepository).findActiveTasksForCollector(200);
-        verifyNoMoreInteractions(collectionRequestRepository);
+        verify(collectorService).getTasks(eq(200), isNull(), eq(false), any());
     }
 
     @Test
     void getTasks_all_true_calls_all_tasks_query() throws Exception {
-        when(collectionRequestRepository.findTasksForCollector(200))
-                .thenReturn(List.of(new TaskView(11, "REQ002", "collected")));
+        when(collectorService.getTasks(eq(200), isNull(), eq(true), any()))
+                .thenReturn(new PageImpl<>(
+                        List.of(CollectorTaskResponse.builder()
+                                .id(11)
+                                .requestCode("REQ002")
+                                .status("collected")
+                                .build()),
+                        PageRequest.of(0, 10),
+                        1));
 
         mockMvc.perform(get("/api/collector/collections/tasks")
                         .queryParam("all", "true")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[0].id").value(11));
+                .andExpect(jsonPath("$.result.content[0].id").value(11));
 
-        verify(collectionRequestRepository).findTasksForCollector(200);
-        verifyNoMoreInteractions(collectionRequestRepository);
+        verify(collectorService).getTasks(eq(200), isNull(), eq(true), any());
     }
 
     @Test
     void getTasks_status_param_calls_status_query() throws Exception {
-        when(collectionRequestRepository.findTasksForCollectorByStatus(200, "on_the_way"))
-                .thenReturn(List.of(new TaskView(12, "REQ003", "on_the_way")));
+        when(collectorService.getTasks(eq(200), eq("on_the_way"), eq(false), any()))
+                .thenReturn(new PageImpl<>(
+                        List.of(CollectorTaskResponse.builder()
+                                .id(12)
+                                .requestCode("REQ003")
+                                .status("on_the_way")
+                                .build()),
+                        PageRequest.of(0, 10),
+                        1));
 
         mockMvc.perform(get("/api/collector/collections/tasks")
                         .queryParam("status", "on_the_way")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[0].status").value("on_the_way"));
+                .andExpect(jsonPath("$.result.content[0].status").value("on_the_way"));
 
-        verify(collectionRequestRepository).findTasksForCollectorByStatus(200, "on_the_way");
-        verifyNoMoreInteractions(collectionRequestRepository);
+        verify(collectorService).getTasks(eq(200), eq("on_the_way"), eq(false), any());
     }
 
     @Test
@@ -142,9 +158,9 @@ class CollectionControllerWebMvcTest {
                 .imageUrls(List.of("https://example.com/1.png"))
                 .build();
 
-        when(collectorReportService.createCollectorReport(any(), eq(200))).thenReturn(response);
+        when(collectorReportService.createCollectorReport(any(), anyList(), eq(200))).thenReturn(response);
 
-        var file = new org.springframework.mock.web.MockMultipartFile(
+        var image = new org.springframework.mock.web.MockMultipartFile(
                 "images",
                 "photo.png",
                 "image/png",
@@ -152,10 +168,21 @@ class CollectionControllerWebMvcTest {
         );
 
         mockMvc.perform(multipart("/api/collector/collections/{id}/complete", 103)
-                        .file(file)
-                        .param("collectorNote", "done")
-                        .param("actualWeight", "5.5")
-                        .param("address", "123 Test Street")
+                        .file(image)
+                        .file(new org.springframework.mock.web.MockMultipartFile(
+                                "report",
+                                "report.json",
+                                "application/json",
+                                """
+                                {
+                                  "wasteType":"RECYCLABLE",
+                                  "collectorNote":"done",
+                                  "items":[
+                                    {"categoryId":1,"quantity":2.0}
+                                  ]
+                                }
+                                """.getBytes()
+                        ))
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
@@ -163,7 +190,20 @@ class CollectionControllerWebMvcTest {
                 .andExpect(jsonPath("$.result.collectionRequestId").value(103))
                 .andExpect(jsonPath("$.result.collectorId").value(200));
 
-        verify(collectorReportService).createCollectorReport(any(), eq(200));
+        verify(collectorReportService).createCollectorReport(any(), anyList(), eq(200));
+    }
+
+    @Test
+    void markCollected_calls_service_and_returns_expected_status() throws Exception {
+        mockMvc.perform(post("/api/collector/collections/{id}/collected", 104)
+                        .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
+                                .jwt(j -> j.claim("collectorId", 200))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.collectionRequestId").value(104))
+                .andExpect(jsonPath("$.result.status").value("collected"));
+
+        verify(collectorService).completeTask(104, 200);
+        verifyNoMoreInteractions(collectorService);
     }
 
     @Test
@@ -176,45 +216,4 @@ class CollectionControllerWebMvcTest {
                 .andExpect(status().isNotFound());
     }
 
-    static class TaskView implements CollectionRequestRepository.CollectorTaskView {
-        private final Integer id;
-        private final String requestCode;
-        private final String status;
-
-        TaskView(Integer id, String requestCode, String status) {
-            this.id = id;
-            this.requestCode = requestCode;
-            this.status = status;
-        }
-
-        @Override
-        public Integer getId() {
-            return id;
-        }
-
-        @Override
-        public String getRequestCode() {
-            return requestCode;
-        }
-
-        @Override
-        public String getStatus() {
-            return status;
-        }
-
-        @Override
-        public LocalDateTime getAssignedAt() {
-            return LocalDateTime.now();
-        }
-
-        @Override
-        public LocalDateTime getCreatedAt() {
-            return LocalDateTime.now();
-        }
-
-        @Override
-        public LocalDateTime getUpdatedAt() {
-            return LocalDateTime.now();
-        }
-    }
 }

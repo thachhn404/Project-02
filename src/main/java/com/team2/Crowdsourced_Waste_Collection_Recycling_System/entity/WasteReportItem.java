@@ -1,7 +1,10 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteUnit;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,34 +17,36 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "collection_request_images")
+@Table(name = "waste_report_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CollectionRequestImage {
+public class WasteReportItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "collection_request_id", nullable = false)
-    private CollectionRequest collectionRequest;
+    @JoinColumn(name = "report_id", nullable = false)
+    private WasteReport report;
 
-    @Column(name = "cloudinary_public_id", length = 255)
-    private String cloudinaryPublicId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "waste_category_id", nullable = false)
+    private WasteCategory wasteCategory;
 
-    @Column(name = "image_url", nullable = false, length = 500)
-    private String imageUrl;
+    @Column(name = "quantity", precision = 19, scale = 4)
+    private BigDecimal quantity;
 
-    @Column(name = "image_role", length = 20)
-    private String imageRole;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unit_snapshot", length = 20)
+    private WasteUnit unitSnapshot;
 
-    @Column(name = "uploaded_at")
-    private LocalDateTime uploadedAt = LocalDateTime.now();
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }
-

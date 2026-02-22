@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -49,6 +50,7 @@ public class CollectionTracking {
     private BigDecimal longitude;
 
     @Column(name = "note", length = 500)
+    @Nationalized
     private String note;
 
     @Lob

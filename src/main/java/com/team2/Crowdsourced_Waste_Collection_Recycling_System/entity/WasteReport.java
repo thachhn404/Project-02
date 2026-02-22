@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -18,6 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,15 +43,15 @@ public class WasteReport {
     @JoinColumn(name = "citizen_id", nullable = false)
     private Citizen citizen;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "waste_type_id", nullable = false)
-    private WasteType wasteType;
-
     @Column(name = "description", length = 1000)
+    @Nationalized
     private String description;
 
-    // @Column(name = "estimated_weight_kg", precision = 10, scale = 2)
-    // private BigDecimal estimatedWeightKg;
+    @Column(name = "waste_type", nullable = false, length = 20)
+    private String wasteType;
+
+    @Column(name = "estimated_weight", precision = 10, scale = 2)
+    private BigDecimal estimatedWeight; // Khối lượng ước tính (kg)
 
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
@@ -58,6 +60,7 @@ public class WasteReport {
     private BigDecimal longitude;
 
     @Column(name = "address", length = 500)
+    @Nationalized
     private String address;
 
     // @Column(name = "ward", length = 100)
@@ -69,6 +72,10 @@ public class WasteReport {
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
     private String images;
+
+    @Column(name = "cloudinary_public_id", length = 255)
+    private String cloudinaryPublicId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
     private WasteReportStatus status;

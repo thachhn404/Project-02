@@ -18,6 +18,8 @@ public enum CollectionRequestStatus {
 //collector
     COLLECTED,
 
+    COMPLETED,
+
    //enterprise tu choi bao cao hoac citizen huy bao cao
     REJECTED;
 
@@ -26,12 +28,12 @@ public enum CollectionRequestStatus {
      // Active tasks = ASSIGNED | ACCEPTED_COLLECTOR | ON_THE_WAY
 
     public boolean isActiveTask() {
-        return this == ASSIGNED || this == ACCEPTED_COLLECTOR || this == ON_THE_WAY;
+        return this == ASSIGNED || this == ACCEPTED_COLLECTOR || this == ON_THE_WAY || this == COLLECTED;
     }
 
     //kiem tra task da hoan thanh chua
     public boolean isCompleted() {
-        return this == COLLECTED;
+        return this == COMPLETED;
     }
 
    //chuyen string sang enum

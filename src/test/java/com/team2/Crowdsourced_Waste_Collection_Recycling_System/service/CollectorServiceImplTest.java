@@ -7,6 +7,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionTrackingRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl.CollectorServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,8 @@ class CollectorServiceImplTest {
     CollectionTrackingRepository collectionTrackingRepository;
     @Mock
     CollectorRepository collectorRepository;
+    @Mock
+    WasteReportRepository wasteReportRepository;
 
     @InjectMocks
     CollectorServiceImpl service;
