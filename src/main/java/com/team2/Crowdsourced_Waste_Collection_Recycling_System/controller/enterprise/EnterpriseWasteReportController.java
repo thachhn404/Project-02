@@ -1,8 +1,10 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.enterprise;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseWasteReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseWasteReportService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,6 +39,35 @@ public class EnterpriseWasteReportController {
         return ResponseEntity.ok(ApiResponse.<List<EnterpriseWasteReportResponse>>builder()
                 .result(result)
                 .message("Lấy danh sách báo cáo PENDING phù hợp thành công")
+                .build());
+    }
+
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> acceptReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id) {
+
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        enterpriseWasteReportService.acceptReport(enterpriseId, id);
+
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("Chấp nhận báo cáo thành công")
+                .build());
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> rejectReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            @RequestBody @Valid RejectWasteReportRequest request) {
+
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        enterpriseWasteReportService.rejectReport(enterpriseId, id, request.getRejectionReason());
+
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("Từ chối báo cáo thành công")
                 .build());
     }
 

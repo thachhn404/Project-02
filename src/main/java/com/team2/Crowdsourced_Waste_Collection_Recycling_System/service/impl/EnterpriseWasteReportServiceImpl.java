@@ -12,8 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +72,72 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
                 .filter(s -> !s.isEmpty())
                 .map(String::toUpperCase)
                 .anyMatch(code -> code.equals(target));
+    }
+
+    @Override
+    @Transactional
+    public void acceptReport(Integer enterpriseId, Integer reportId) {
+        Enterprise enterprise = validateEnterprise(enterpriseId);
+        WasteReport report = validateReport(reportId);
+
+        validateProcessingEligibility(enterprise, report);
+
+        report.setStatus(WasteReportStatus.ACCEPTED_ENTERPRISE);
+        report.setEnterprise(enterprise);
+        report.setAcceptedAt(LocalDateTime.now());
+        
+        wasteReportRepository.save(report);
+    }
+
+    @Override
+    @Transactional
+    public void rejectReport(Integer enterpriseId, Integer reportId, String reason) {
+        Enterprise enterprise = validateEnterprise(enterpriseId);
+        WasteReport report = validateReport(reportId);
+
+        // Enterprise vẫn có thể reject nếu không đủ điều kiện xử lý, nhưng ở đây ta giả sử họ reject vì lý do khác
+        // Tuy nhiên, nếu họ không support loại rác này, họ không nên thấy nó để reject.
+        // Nhưng logic nghiệp vụ cho phép reject, nên ta cứ để.
+        
+        // Check nếu report đã bị ai đó xử lý
+        if (report.getStatus() != WasteReportStatus.PENDING) {
+             throw new ResponseStatusException(HttpStatus.CONFLICT, "Báo cáo này đã được xử lý hoặc không còn ở trạng thái chờ");
+        }
+
+        report.setStatus(WasteReportStatus.REJECTED);
+        report.setEnterprise(enterprise);
+        report.setRejectionReason(reason);
+        
+        wasteReportRepository.save(report);
+    }
+
+    private Enterprise validateEnterprise(Integer enterpriseId) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+        return enterpriseRepository.findById(enterpriseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enterprise không tồn tại"));
+    }
+
+    private WasteReport validateReport(Integer reportId) {
+        return wasteReportRepository.findById(reportId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Báo cáo không tồn tại"));
+    }
+
+    private void validateProcessingEligibility(Enterprise enterprise, WasteReport report) {
+        if (report.getStatus() != WasteReportStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Báo cáo này đã được xử lý hoặc không còn ở trạng thái chờ");
+        }
+        
+        // Kiểm tra xem Enterprise có xử lý được loại rác và khu vực này không
+        // Nếu không, họ không nên được phép accept (để tránh tranh giành report mà mình không làm được)
+        if (!isSupportedWasteType(enterprise, report.getWasteType())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enterprise không hỗ trợ loại rác này");
+        }
+        
+        if (!isInServiceArea(enterprise, report)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Báo cáo nằm ngoài khu vực hoạt động của Enterprise");
+        }
     }
 
     private boolean isInServiceArea(Enterprise enterprise, WasteReport report) {
