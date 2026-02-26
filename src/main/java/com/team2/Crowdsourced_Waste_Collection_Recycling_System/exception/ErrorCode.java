@@ -22,6 +22,13 @@ public enum ErrorCode {
     IMAGE_UPLOAD_FAILED(1012, "Failed to upload image", HttpStatus.INTERNAL_SERVER_ERROR),
     WASTE_REPORT_NOT_FOUND(1013, "Waste report not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1014, "Invalid request", HttpStatus.BAD_REQUEST),
+    ROLE_NOT_FOUND(1015, "Role not found", HttpStatus.NOT_FOUND),
+    USER_ALREADY_SUSPENDED(1016, "User is already suspended", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_ACTIVE(1017, "User is already active", HttpStatus.BAD_REQUEST),
+    CANNOT_SUSPEND_SELF(1018, "Admin cannot suspend themselves", HttpStatus.FORBIDDEN),
+    ENTERPRISE_REQUIRED_FOR_COLLECTOR(1019, "Enterprise ID is required when creating a COLLECTOR account",
+            HttpStatus.BAD_REQUEST),
+    USER_SUSPENDED(1020, "Your account has been suspended", HttpStatus.FORBIDDEN),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
