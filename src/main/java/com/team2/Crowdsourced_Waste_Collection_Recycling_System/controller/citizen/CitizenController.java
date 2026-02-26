@@ -12,6 +12,8 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Was
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
@@ -35,11 +37,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/citizen")
 @RequiredArgsConstructor
+@Tag(name = "Citizen", description = "Tác vụ của công dân: báo cáo rác, khiếu nại, thưởng")
 public class CitizenController {
     private final WasteReportService wasteReportService;
 
     @PostMapping(value = "/reports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Tạo báo cáo rác", description = "Gửi báo cáo kèm ảnh, vị trí và mô tả")
     public ResponseEntity<ApiResponse<WasteReportResponse>> createReport(@Valid @ModelAttribute CreateWasteReportRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String citizenEmail = authentication.getName();
@@ -53,6 +57,7 @@ public class CitizenController {
 
     @PutMapping(value = "/reports/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Cập nhật báo cáo rác", description = "Chỉnh sửa nội dung, ảnh của báo cáo đã tạo")
     public ResponseEntity<ApiResponse<WasteReportResponse>> updateReport(
             @PathVariable("id") Integer id,
             @Valid @ModelAttribute UpdateWasteReportRequest request) {
@@ -68,6 +73,7 @@ public class CitizenController {
 
     @DeleteMapping("/reports/{id}")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Huỷ báo cáo rác", description = "Xoá báo cáo của tôi theo ID")
     public ResponseEntity<ApiResponse<Void>> deleteReport(@PathVariable("id") Integer id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String citizenEmail = authentication.getName();
@@ -80,6 +86,7 @@ public class CitizenController {
 
     @GetMapping("/reports")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Danh sách báo cáo của tôi", description = "Trả về các báo cáo rác do tôi tạo")
     public ResponseEntity<ApiResponse<List<WasteReportResponse>>> getMyReports() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String citizenEmail = authentication.getName();
@@ -93,6 +100,7 @@ public class CitizenController {
 
     @GetMapping("/reports/{id}")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Chi tiết báo cáo của tôi", description = "Lấy chi tiết báo cáo theo ID")
     public ResponseEntity<ApiResponse<WasteReportResponse>> getMyReportById(@PathVariable("id") Integer id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String citizenEmail = authentication.getName();
@@ -106,6 +114,7 @@ public class CitizenController {
 
     @GetMapping("/reports/{id}/result")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Kết quả xử lý báo cáo", description = "Xem kết quả thu gom của báo cáo")
     public ResponseEntity<ApiResponse<CitizenReportResultResponse>> getMyReportResult(@PathVariable("id") Integer id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String citizenEmail = authentication.getName();
@@ -119,6 +128,7 @@ public class CitizenController {
 
     @GetMapping("/rewards/history")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Lịch sử điểm thưởng", description = "Lọc lịch sử theo khoảng thời gian tùy chọn")
     public ResponseEntity<ApiResponse<List<CitizenRewardHistoryResponse>>> getRewardHistory(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
@@ -133,6 +143,7 @@ public class CitizenController {
     }
 
     @GetMapping("/leaderboard")
+    @Operation(summary = "Bảng xếp hạng công dân", description = "Xếp hạng theo điểm, hỗ trợ lọc theo khu vực")
     public ResponseEntity<ApiResponse<List<CitizenLeaderboardResponse>>> getLeaderboard(
             @RequestParam(required = false) String region) {
         List<CitizenLeaderboardResponse> leaderboard = wasteReportService.getLeaderboard(region);
@@ -144,6 +155,7 @@ public class CitizenController {
 
     @PostMapping("/complaints")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Tạo khiếu nại", description = "Gửi khiếu nại liên quan đến thu gom")
     public ResponseEntity<ApiResponse<ComplaintResponse>> createComplaint(
             @Valid @org.springframework.web.bind.annotation.RequestBody CreateComplaintRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -158,6 +170,7 @@ public class CitizenController {
 
     @GetMapping("/complaints")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Danh sách khiếu nại", description = "Liệt kê các khiếu nại của tôi")
     public ResponseEntity<ApiResponse<List<ComplaintResponse>>> getComplaints() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String citizenEmail = authentication.getName();
@@ -171,6 +184,7 @@ public class CitizenController {
 
     @GetMapping("/waste-categories")
     @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Danh mục loại rác", description = "Danh sách các loại rác hỗ trợ")
     public ResponseEntity<ApiResponse<List<WasteCategoryResponse>>> getWasteCategories() {
         List<WasteCategoryResponse> categories = wasteReportService.getWasteCategories();
         return ResponseEntity.ok(ApiResponse.<List<WasteCategoryResponse>>builder()

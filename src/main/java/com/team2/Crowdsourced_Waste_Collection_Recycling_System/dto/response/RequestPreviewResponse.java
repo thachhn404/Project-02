@@ -7,21 +7,23 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CreateCollectorResponse {
-    Integer userId;
-    Integer collectorId;
-    Integer enterpriseId;
-    String email;
-    String fullName;
-    String phone;
-    String employeeCode;
-    String status;
-    String vehicleType;
-    String vehiclePlate;
-    Integer violationCount;
+public class RequestPreviewResponse {
+    Integer id;
+    String requestCode;
+    BigDecimal latitude;
+    BigDecimal longitude;
+    LocalDateTime createdAt;
+    String wasteType;
+    Integer slaHours;
+    LocalDateTime dueAt;
+    Long hoursRemaining;
+    String priority;
 }

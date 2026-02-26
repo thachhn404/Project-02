@@ -7,21 +7,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CreateCollectorResponse {
-    Integer userId;
-    Integer collectorId;
-    Integer enterpriseId;
-    String email;
+public class EligibleCollectorResponse {
+    Integer id;
     String fullName;
-    String phone;
-    String employeeCode;
     String status;
-    String vehicleType;
-    String vehiclePlate;
-    Integer violationCount;
+    Double distanceKm;
+    Boolean online;
+    BigDecimal currentLatitude;
+    BigDecimal currentLongitude;
+    Integer activeTaskCount;
 }

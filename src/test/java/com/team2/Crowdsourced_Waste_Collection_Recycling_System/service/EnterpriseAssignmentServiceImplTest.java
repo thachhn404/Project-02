@@ -53,7 +53,7 @@ class EnterpriseAssignmentServiceImplTest {
         request.setId(100);
         request.setRequestCode("CR_TEST_0001");
         request.setEnterprise(enterprise);
-        request.setStatus(CollectionRequestStatus.PENDING);
+        request.setStatus(CollectionRequestStatus.ACCEPTED_ENTERPRISE);
         WasteReport report = new WasteReport();
         report.setId(999);
         report.setStatus(WasteReportStatus.ACCEPTED_ENTERPRISE);

@@ -113,10 +113,8 @@ public class CollectorReportServiceImpl implements CollectorReportService {
 
     @Override
   //lay danh sách report của collector hiện tại
-    public Page<CollectorReportResponse> getReportsByCollector(Integer collectorId, Pageable pageable) {
-        // page query
-        Page<CollectorReport> reports = collectorReportRepository.findByCollectorIdOrderByCreatedAtDesc(collectorId, pageable);
-        // map entity -> response
+    public List<CollectorReportResponse> getReportsByCollector(Integer collectorId) {
+        Page<CollectorReport> reports = collectorReportRepository.findByCollectorIdOrderByCreatedAtDesc(collectorId, Pageable.unpaged());
         return reports.map(report -> {
             List<String> imageUrls = new ArrayList<>();
             for (CollectorReportImage image : report.getImages()) {
@@ -133,7 +131,7 @@ public class CollectorReportServiceImpl implements CollectorReportService {
                             .build())
                     .toList();
             return mapToResponse(report, imageUrls, items);
-        });
+        }).getContent();
     }
 
     @Override

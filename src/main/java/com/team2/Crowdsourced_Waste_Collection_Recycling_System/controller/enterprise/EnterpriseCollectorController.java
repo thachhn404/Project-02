@@ -11,6 +11,8 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.colle
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.enterprise.EnterpriseRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authentication.RoleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authentication.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +35,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/enterprise/collectors")
 @RequiredArgsConstructor
+@Tag(name = "Enterprise Collectors", description = "Quản lý nhân viên thu gom của doanh nghiệp")
 public class EnterpriseCollectorController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -43,6 +46,7 @@ public class EnterpriseCollectorController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
     @Transactional
+    @Operation(summary = "Tạo Collector", description = "Tạo mới nhân viên thu gom thuộc doanh nghiệp hiện tại")
     public ApiResponse<CreateCollectorResponse> createCollector(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody CreateCollectorRequest request) {
@@ -110,6 +114,7 @@ public class EnterpriseCollectorController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
     @Transactional(readOnly = true)
+    @Operation(summary = "Danh sách Collector", description = "Liệt kê nhân viên thu gom, hỗ trợ lọc theo status")
     public ApiResponse<List<CreateCollectorResponse>> getCollectors(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(value = "status", required = false) String status) {
@@ -142,6 +147,7 @@ public class EnterpriseCollectorController {
                     .status(c.getStatus() != null ? c.getStatus().name().toLowerCase() : null)
                     .vehicleType(c.getVehicleType())
                     .vehiclePlate(c.getVehiclePlate())
+                    .violationCount(c.getViolationCount())
                     .build());
         }
 

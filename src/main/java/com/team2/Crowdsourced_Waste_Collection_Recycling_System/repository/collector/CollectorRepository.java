@@ -17,4 +17,7 @@ public interface CollectorRepository extends JpaRepository<Collector, Integer> {
     List<Collector> findByEnterprise_IdOrderByCreatedAtDesc(Integer enterpriseId);
 
     List<Collector> findByEnterprise_IdAndStatusOrderByCreatedAtDesc(Integer enterpriseId, CollectorStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM Collector c WHERE c.enterprise.id = :enterpriseId AND c.status IN (com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus.AVAILABLE, com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus.ACTIVE)")
+    List<Collector> findAvailableCollectors(@org.springframework.data.repository.query.Param("enterpriseId") Integer enterpriseId);
 }
