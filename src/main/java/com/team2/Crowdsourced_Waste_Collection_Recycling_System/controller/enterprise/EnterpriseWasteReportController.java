@@ -1,12 +1,8 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.enterprise;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseWasteReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseWasteReportService;
-import jakarta.validation.Valid;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +10,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,14 +19,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/enterprise/waste-reports")
 @RequiredArgsConstructor
-@Tag(name = "Enterprise Waste Reports", description = "Xử lý báo cáo rác ở phía doanh nghiệp")
 public class EnterpriseWasteReportController {
 
     private final EnterpriseWasteReportService enterpriseWasteReportService;
 
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
-    @Operation(summary = "Danh sách báo cáo PENDING", description = "Lấy các báo cáo rác phù hợp để doanh nghiệp xử lý")
     public ResponseEntity<ApiResponse<List<EnterpriseWasteReportResponse>>> getPendingReports(
             @AuthenticationPrincipal Jwt jwt) {
 
@@ -43,37 +34,6 @@ public class EnterpriseWasteReportController {
         return ResponseEntity.ok(ApiResponse.<List<EnterpriseWasteReportResponse>>builder()
                 .result(result)
                 .message("Lấy danh sách báo cáo PENDING phù hợp thành công")
-                .build());
-    }
-
-    @PostMapping("/{id}/accept")
-    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
-    @Operation(summary = "Accept báo cáo", description = "Chấp nhận báo cáo rác và chuyển bước xử lý tiếp theo")
-    public ResponseEntity<ApiResponse<Void>> acceptReport(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id) {
-
-        Integer enterpriseId = extractEnterpriseId(jwt);
-        enterpriseWasteReportService.acceptReport(enterpriseId, id);
-
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Chấp nhận báo cáo thành công")
-                .build());
-    }
-
-    @PostMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
-    @Operation(summary = "Reject báo cáo", description = "Từ chối báo cáo rác kèm lý do")
-    public ResponseEntity<ApiResponse<Void>> rejectReport(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id,
-            @RequestBody @Valid RejectWasteReportRequest request) {
-
-        Integer enterpriseId = extractEnterpriseId(jwt);
-        enterpriseWasteReportService.rejectReport(enterpriseId, id, request.getRejectionReason());
-
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Từ chối báo cáo thành công")
                 .build());
     }
 
