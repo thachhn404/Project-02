@@ -4,6 +4,8 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AuthService;
 import com.nimbusds.jose.JOSEException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +13,7 @@ import java.text.ParseException;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Xác thực và ủy quyền bằng JWT")
 /**
  * Controller cung cấp các API xác thực/ủy quyền dựa trên JWT.
  *
@@ -29,6 +32,7 @@ public class AuthController {
     }
 
     @PostMapping("/token")
+    @Operation(summary = "Đăng nhập lấy token", description = "Trả về JWT trong ApiResponse")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
         // Endpoint đăng nhập (trả về token trong ApiResponse)
         var result = authService.login(request);
@@ -36,6 +40,7 @@ public class AuthController {
     }
 
     @PostMapping("/introspect")
+    @Operation(summary = "Kiểm tra token", description = "Xác minh token hợp lệ/không bị thu hồi")
     ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest request)
             throws ParseException, JOSEException {
         // Trả về valid=true/false để phục vụ kiểm tra token (CustomJwtDecoder cũng dùng luồng này)
@@ -44,6 +49,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Đăng ký tài khoản", description = "Tạo tài khoản mới và trả về JWT")
     public ApiResponse<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
         // Đăng ký tài khoản và trả về token luôn để client đăng nhập ngay
         return ApiResponse.<AuthenticationResponse>builder()
@@ -52,6 +58,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Đăng nhập", description = "Alias của /token")
     public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
         // Đăng nhập (alias của /token)
         return ApiResponse.<AuthenticationResponse>builder()
@@ -60,6 +67,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Đăng xuất", description = "Thu hồi token hiện tại nếu hợp lệ")
     public ResponseEntity<Void> logout(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestBody(required = false) LogoutRequest request) {

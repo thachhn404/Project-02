@@ -3,6 +3,8 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.clou
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CloudinaryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CloudinaryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,10 +21,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
+@Tag(name = "Files", description = "Upload/Xoá file trên Cloudinary")
 public class FileController {
     private final CloudinaryService cloudinaryService;
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Tải ảnh lên", description = "Upload ảnh lên Cloudinary theo module")
     public ApiResponse<CloudinaryResponse> uploadImage(
             @RequestPart("file") MultipartFile file,
             @RequestParam(value = "module", defaultValue = "reports") String module
@@ -39,6 +43,7 @@ public class FileController {
     }
 
     @DeleteMapping("/images")
+    @Operation(summary = "Xoá ảnh", description = "Xoá ảnh theo publicId")
     public ResponseEntity<Void> deleteImage(@RequestParam("publicId") String publicId) {
         try {
             cloudinaryService.deleteImage(publicId);

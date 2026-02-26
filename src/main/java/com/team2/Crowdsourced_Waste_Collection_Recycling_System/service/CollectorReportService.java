@@ -2,8 +2,6 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateCollectorReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorReportResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -15,7 +13,7 @@ public interface CollectorReportService {
     CollectorReportResponse getReportById(Integer reportId, Integer collectorId);
 
 
-    Page<CollectorReportResponse> getReportsByCollector(Integer collectorId, Pageable pageable);
+    List<CollectorReportResponse> getReportsByCollector(Integer collectorId);
 
     CollectorReportResponse getReportByCollectionRequest(Integer collectionRequestId, Integer collectorId);
 

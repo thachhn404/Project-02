@@ -8,13 +8,12 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.Collecto
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+ 
 import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+ 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,6 +35,7 @@ import java.util.List;
 @RequestMapping("/api/collector/collections")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Collector Collections", description = "Nhiệm vụ và báo cáo của Collector")
 public class CollectionController {
     private final CollectorService collectorService;
     private final CollectorReportService collectorReportService;
@@ -48,35 +48,32 @@ public class CollectionController {
      */
     @GetMapping("/tasks")
     @PreAuthorize("hasRole('COLLECTOR')")
-    public ApiResponse<Page<CollectorTaskResponse>> getTasks(
+    @Operation(summary = "Danh sách task", description = "Hiển thị task active theo mặc định; hỗ trợ lọc status hoặc all=true")
+    public ApiResponse<java.util.List<CollectorTaskResponse>> getTasks(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "all", required = false, defaultValue = "false") boolean all,
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(1) Integer page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(1) Integer size) {
+            @RequestParam(value = "all", required = false, defaultValue = "false") boolean all) {
         Integer collectorId = extractCollectorId(jwt);
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<CollectorTaskResponse> tasks = collectorService.getTasks(collectorId, status, all, pageable);
-        return ApiResponse.<Page<CollectorTaskResponse>>builder().result(tasks).build();
+        java.util.List<CollectorTaskResponse> tasks = collectorService.getTasks(collectorId, status, all);
+        return ApiResponse.<java.util.List<CollectorTaskResponse>>builder().result(tasks).build();
     }
 
     @GetMapping("/work_history")
     @PreAuthorize("hasRole('COLLECTOR')")
-    public ApiResponse<Page<CollectorWorkHistoryItemResponse>> getWorkHistory(
+    @Operation(summary = "Lịch sử công việc", description = "Liệt kê lịch sử làm việc, hỗ trợ lọc trạng thái")
+    public ApiResponse<java.util.List<CollectorWorkHistoryItemResponse>> getWorkHistory(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(1) Integer page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(1) Integer size) {
+            @RequestParam(value = "status", required = false) String status) {
         Integer collectorId = extractCollectorId(jwt);
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<CollectorWorkHistoryItemResponse> result = collectorService.getWorkHistory(collectorId, status, pageable);
-        return ApiResponse.<Page<CollectorWorkHistoryItemResponse>>builder()
+        java.util.List<CollectorWorkHistoryItemResponse> result = collectorService.getWorkHistory(collectorId, status);
+        return ApiResponse.<java.util.List<CollectorWorkHistoryItemResponse>>builder()
                 .result(result)
                 .build();
     }
 
     @GetMapping("/stats")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Thống kê hiệu suất", description = "Tổng hợp số liệu theo năm của Collector")
     public ApiResponse<CollectorPerformanceStatsResponse> getStats(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(value = "year", required = false) Integer year) {
@@ -92,6 +89,7 @@ public class CollectionController {
      */
     @PostMapping("/{requestId}/accept")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Chấp nhận nhiệm vụ", description = "Chuyển ASSIGNED → ACCEPTED_COLLECTOR")
     public ApiResponse<CollectionRequestActionResponse> acceptTask(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId) {
@@ -111,6 +109,7 @@ public class CollectionController {
      */
     @PostMapping("/{requestId}/start")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Bắt đầu di chuyển", description = "Chuyển ACCEPTED_COLLECTOR → ON_THE_WAY")
     public ApiResponse<CollectionRequestActionResponse> startTask(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId) {
@@ -132,6 +131,7 @@ public class CollectionController {
      */
     @PostMapping("/{requestId}/reject")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Từ chối nhiệm vụ", description = "Chỉ khi đang ASSIGNED; trả về ACCEPTED_ENTERPRISE")
     public ApiResponse<CollectionRequestActionResponse> rejectTask(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId,
@@ -154,6 +154,7 @@ public class CollectionController {
      */
     @PostMapping("/{requestId}/collected")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Đánh dấu đã thu gom", description = "Chuyển ON_THE_WAY → COLLECTED")
     public ApiResponse<CollectionRequestActionResponse> markCollected(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId) {
@@ -174,6 +175,7 @@ public class CollectionController {
      */
     @PatchMapping("/{requestId}/status")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Cập nhật trạng thái", description = "Cập nhật trạng thái nhiệm vụ (chỉ tiến về phía trước)")
     public ApiResponse<CollectionRequestActionResponse> updateStatus(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId,
@@ -214,6 +216,7 @@ public class CollectionController {
      */
     @GetMapping("/{requestId}/report")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Xem report theo yêu cầu", description = "Lấy collector_report gắn với collection request")
     public ApiResponse<CollectorReportResponse> getReportByCollectionRequest(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId) {
@@ -234,19 +237,13 @@ public class CollectionController {
      */
     @GetMapping("/list_reports")
     @PreAuthorize("hasRole('COLLECTOR')")
-    public ApiResponse<Page<CollectorReportResponse>> getMyReports(
-            @AuthenticationPrincipal Jwt jwt,
-            // pagination: page bat dau tu 1
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(1) Integer page,
-            // pagination: size toi da 12
-            @RequestParam(value = "size", required = false, defaultValue = "12") @Min(1) @Max(12) Integer size) {
+    @Operation(summary = "Danh sách report của tôi", description = "Danh sách báo cáo đã gửi")
+    public ApiResponse<java.util.List<CollectorReportResponse>> getMyReports(
+            @AuthenticationPrincipal Jwt jwt) {
         Integer collectorId = extractCollectorId(jwt);
-        Page<CollectorReportResponse> reports = collectorReportService.getReportsByCollector(
-                collectorId,
-                // page index bat dau tu 0
-                PageRequest.of(page - 1, size));
+        java.util.List<CollectorReportResponse> reports = collectorReportService.getReportsByCollector(collectorId);
 
-        return ApiResponse.<Page<CollectorReportResponse>>builder()
+        return ApiResponse.<java.util.List<CollectorReportResponse>>builder()
                 .result(reports)
                 .build();
     }
@@ -256,6 +253,7 @@ public class CollectionController {
      */
     @GetMapping("/reports/{reportId}")
     @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Chi tiết report", description = "Lấy chi tiết báo cáo theo reportId (thuộc collector hiện tại)")
     public ApiResponse<CollectorReportResponse> getReportById(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer reportId) {

@@ -92,7 +92,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                 WHERE id = :requestId
                   AND enterprise_id = :enterpriseId
                   AND collector_id IS NULL
-                  AND (status = 'accepted_enterprise' OR status = 'pending')
+                  AND status = 'accepted_enterprise'
             """, nativeQuery = true)
     int assignCollector(
             @Param("requestId") Integer requestId,
@@ -109,7 +109,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                 WHERE request_code = :requestCode
                   AND enterprise_id = :enterpriseId
                   AND collector_id IS NULL
-                  AND (status = 'accepted_enterprise' OR status = 'pending')
+                  AND status = 'accepted_enterprise'
             """, nativeQuery = true)
     int assignCollectorByRequestCode(
             @Param("requestCode") String requestCode,

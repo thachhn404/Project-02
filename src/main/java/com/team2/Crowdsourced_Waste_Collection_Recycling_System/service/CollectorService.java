@@ -3,27 +3,26 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorPerformanceStatsResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorTaskResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorWorkHistoryItemResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface CollectorService {
     /**
-     * Lấy danh sách task của collector (phân trang).
+     * Lấy danh sách task của collector.
      * - Nếu all=true: lấy tất cả.
      * - Nếu status != null: lấy theo status.
      * - Ngược lại: lấy active tasks (ASSIGNED, ACCEPTED_COLLECTOR, ON_THE_WAY).
      */
-    Page<CollectorTaskResponse> getTasks(Integer collectorId, String status, boolean all, Pageable pageable);
-
+    List<CollectorTaskResponse> getTasks(Integer collectorId, String status, boolean all);
     /**
-     * Lấy lịch sử công việc của collector (phân trang).
+     * Lấy lịch sử công việc của collector.
      */
-    Page<CollectorWorkHistoryItemResponse> getWorkHistory(Integer collectorId, String status, Pageable pageable);
-
+    List<CollectorWorkHistoryItemResponse> getWorkHistory(Integer collectorId, String status);
     /**
      * Lấy thống kê hiệu suất của collector.
      */
     CollectorPerformanceStatsResponse getStats(Integer collectorId, Integer year);
+
 
     /**
      * Collector chấp nhận nhiệm vụ: assigned -> accepted_collector.

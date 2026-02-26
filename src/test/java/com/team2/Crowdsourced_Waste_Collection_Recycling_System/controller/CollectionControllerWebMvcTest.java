@@ -11,8 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+ 
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -44,69 +43,60 @@ class CollectionControllerWebMvcTest {
 
     @Test
     void getTasks_default_calls_active_tasks_query() throws Exception {
-        when(collectorService.getTasks(eq(200), isNull(), eq(false), any()))
-                .thenReturn(new PageImpl<>(
-                        List.of(CollectorTaskResponse.builder()
-                                .id(10)
-                                .requestCode("REQ001")
-                                .status("assigned")
-                                .build()),
-                        PageRequest.of(0, 10),
-                        1));
+        when(collectorService.getTasks(eq(200), isNull(), eq(false)))
+                .thenReturn(List.of(CollectorTaskResponse.builder()
+                        .id(10)
+                        .requestCode("REQ001")
+                        .status("assigned")
+                        .build()));
 
         mockMvc.perform(get("/api/collector/collections/tasks")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.content[0].id").value(10))
-                .andExpect(jsonPath("$.result.content[0].requestCode").value("REQ001"))
-                .andExpect(jsonPath("$.result.content[0].status").value("assigned"));
+                .andExpect(jsonPath("$.result[0].id").value(10))
+                .andExpect(jsonPath("$.result[0].requestCode").value("REQ001"))
+                .andExpect(jsonPath("$.result[0].status").value("assigned"));
 
-        verify(collectorService).getTasks(eq(200), isNull(), eq(false), any());
+        verify(collectorService).getTasks(eq(200), isNull(), eq(false));
     }
 
     @Test
     void getTasks_all_true_calls_all_tasks_query() throws Exception {
-        when(collectorService.getTasks(eq(200), isNull(), eq(true), any()))
-                .thenReturn(new PageImpl<>(
-                        List.of(CollectorTaskResponse.builder()
-                                .id(11)
-                                .requestCode("REQ002")
-                                .status("collected")
-                                .build()),
-                        PageRequest.of(0, 10),
-                        1));
+        when(collectorService.getTasks(eq(200), isNull(), eq(true)))
+                .thenReturn(List.of(CollectorTaskResponse.builder()
+                        .id(11)
+                        .requestCode("REQ002")
+                        .status("collected")
+                        .build()));
 
         mockMvc.perform(get("/api/collector/collections/tasks")
                         .queryParam("all", "true")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.content[0].id").value(11));
+                .andExpect(jsonPath("$.result[0].id").value(11));
 
-        verify(collectorService).getTasks(eq(200), isNull(), eq(true), any());
+        verify(collectorService).getTasks(eq(200), isNull(), eq(true));
     }
 
     @Test
     void getTasks_status_param_calls_status_query() throws Exception {
-        when(collectorService.getTasks(eq(200), eq("on_the_way"), eq(false), any()))
-                .thenReturn(new PageImpl<>(
-                        List.of(CollectorTaskResponse.builder()
-                                .id(12)
-                                .requestCode("REQ003")
-                                .status("on_the_way")
-                                .build()),
-                        PageRequest.of(0, 10),
-                        1));
+        when(collectorService.getTasks(eq(200), eq("on_the_way"), eq(false)))
+                .thenReturn(List.of(CollectorTaskResponse.builder()
+                        .id(12)
+                        .requestCode("REQ003")
+                        .status("on_the_way")
+                        .build()));
 
         mockMvc.perform(get("/api/collector/collections/tasks")
                         .queryParam("status", "on_the_way")
                         .with(jwt().authorities(createAuthorityList("ROLE_COLLECTOR"))
                                 .jwt(j -> j.claim("collectorId", 200))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.content[0].status").value("on_the_way"));
+                .andExpect(jsonPath("$.result[0].status").value("on_the_way"));
 
-        verify(collectorService).getTasks(eq(200), eq("on_the_way"), eq(false), any());
+        verify(collectorService).getTasks(eq(200), eq("on_the_way"), eq(false));
     }
 
     @Test

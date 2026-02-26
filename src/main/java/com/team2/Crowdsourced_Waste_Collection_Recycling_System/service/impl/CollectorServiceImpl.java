@@ -36,34 +36,36 @@ public class CollectorServiceImpl implements CollectorService {
     private final WasteReportRepository wasteReportRepository;
 
     @Override
-    public Page<CollectorTaskResponse> getTasks(Integer collectorId, String status, boolean all, Pageable pageable) {
-        Page<CollectionRequestRepository.CollectorTaskView> tasks;
+    public List<CollectorTaskResponse> getTasks(Integer collectorId, String status, boolean all) {
+        Pageable unpaged = Pageable.unpaged();
+        Page<CollectionRequestRepository.CollectorTaskView> tasksPage;
         if (all) {
-            tasks = collectionRequestRepository.findTasksForCollector(collectorId, pageable);
+            tasksPage = collectionRequestRepository.findTasksForCollector(collectorId, unpaged);
         } else if (status != null && !status.isBlank()) {
-            tasks = collectionRequestRepository.findTasksForCollectorByStatus(collectorId, status, pageable);
+            tasksPage = collectionRequestRepository.findTasksForCollectorByStatus(collectorId, status, unpaged);
         } else {
-            tasks = collectionRequestRepository.findActiveTasksForCollector(collectorId, pageable);
+            tasksPage = collectionRequestRepository.findActiveTasksForCollector(collectorId, unpaged);
         }
-        return tasks.map(t -> CollectorTaskResponse.builder()
+        return tasksPage.map(t -> CollectorTaskResponse.builder()
                 .id(t.getId())
                 .requestCode(t.getRequestCode())
                 .status(t.getStatus())
                 .assignedAt(t.getAssignedAt())
                 .createdAt(t.getCreatedAt())
                 .updatedAt(t.getUpdatedAt())
-                .build());
+                .build()).getContent();
     }
 
     @Override
-    public Page<CollectorWorkHistoryItemResponse> getWorkHistory(Integer collectorId, String status, Pageable pageable) {
-        Page<CollectionRequestRepository.CollectorWorkHistoryView> rows;
+    public List<CollectorWorkHistoryItemResponse> getWorkHistory(Integer collectorId, String status) {
+        Pageable unpaged = Pageable.unpaged();
+        Page<CollectionRequestRepository.CollectorWorkHistoryView> rowsPage;
         if (status != null && !status.isBlank()) {
-            rows = collectionRequestRepository.findWorkHistoryForCollectorByStatus(collectorId, status, pageable);
+            rowsPage = collectionRequestRepository.findWorkHistoryForCollectorByStatus(collectorId, status, unpaged);
         } else {
-            rows = collectionRequestRepository.findWorkHistoryForCollector(collectorId, pageable);
+            rowsPage = collectionRequestRepository.findWorkHistoryForCollector(collectorId, unpaged);
         }
-        return rows.map(row -> CollectorWorkHistoryItemResponse.builder()
+        return rowsPage.map(row -> CollectorWorkHistoryItemResponse.builder()
                 .collectionRequestId(row.getId())
                 .requestCode(row.getRequestCode())
                 .status(row.getStatus())
@@ -76,7 +78,7 @@ public class CollectorServiceImpl implements CollectorService {
                 .collectedAt(row.getCollectedAt())
                 .completedAt(row.getCompletedAt())
                 .updatedAt(row.getUpdatedAt())
-                .build());
+                .build()).getContent();
     }
 
     @Override
