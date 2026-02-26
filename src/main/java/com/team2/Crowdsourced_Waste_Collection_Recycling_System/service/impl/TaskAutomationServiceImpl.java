@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -33,8 +34,23 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
         List<CollectionRequest> expiredTasks = collectionRequestRepository.findExpiredAssignedTasks(threshold);
 
         for (CollectionRequest request : expiredTasks) {
-            log.info("Task {} assigned > 4h. Reassigning...", request.getRequestCode());
-            reassignTask(request);
+            log.info("Task {} assigned > 4h. Processing timeout...", request.getRequestCode());
+            Collector currentCollector = request.getCollector();
+            if (currentCollector != null) {
+                Integer vc = currentCollector.getViolationCount() == null ? 0 : currentCollector.getViolationCount();
+                vc = vc + 1;
+                currentCollector.setViolationCount(vc);
+                if (vc >= 3) {
+                    currentCollector.setStatus(CollectorStatus.SUSPEND);
+                    log.warn("Collector {} suspended due to reaching {} violations (>=3).", currentCollector.getId(), vc);
+                }
+                collectorRepository.save(currentCollector);
+            }
+            if (isWithinWorkingHours()) {
+                reassignTask(request);
+            } else {
+                log.info("Skipping reassignment for task {} due to non-working hours.", request.getRequestCode());
+            }
         }
     }
 
@@ -108,6 +124,13 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
             }
             collectorRepository.save(collector);
         }
+    }
+
+    private boolean isWithinWorkingHours() {
+        LocalTime now = LocalTime.now();
+        LocalTime start = LocalTime.of(7, 0);
+        LocalTime end = LocalTime.of(17, 0);
+        return !now.isBefore(start) && !now.isAfter(end);
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
