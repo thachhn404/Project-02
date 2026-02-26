@@ -99,6 +99,12 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
             @Param("collectorId") Integer collectorId,
             @Param("enterpriseId") Integer enterpriseId);
 
+    @Query("SELECT cr FROM CollectionRequest cr WHERE cr.status = com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.ASSIGNED AND cr.assignedAt < :threshold")
+    List<CollectionRequest> findExpiredAssignedTasks(@Param("threshold") LocalDateTime threshold);
+
+    @Query("SELECT cr FROM CollectionRequest cr WHERE cr.status IN (com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.ASSIGNED, com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.ACCEPTED_COLLECTOR, com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.ON_THE_WAY, com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.COLLECTED) AND cr.assignedAt < :threshold")
+    List<CollectionRequest> findSlaViolatedTasks(@Param("threshold") LocalDateTime threshold);
+
     @Modifying
     @Query(value = """
                 UPDATE collection_requests

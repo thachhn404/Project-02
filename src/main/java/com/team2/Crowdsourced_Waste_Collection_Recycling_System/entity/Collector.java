@@ -77,6 +77,9 @@ public class Collector {
     @Column(name = "total_weight_collected", precision = 12, scale = 2)
     private BigDecimal totalWeightCollected;
 
+    @Column(name = "violation_count")
+    private Integer violationCount = 0;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

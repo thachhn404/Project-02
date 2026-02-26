@@ -23,4 +23,5 @@ public class CreateCollectorResponse {
     String status;
     String vehicleType;
     String vehiclePlate;
+    Integer violationCount;
 }

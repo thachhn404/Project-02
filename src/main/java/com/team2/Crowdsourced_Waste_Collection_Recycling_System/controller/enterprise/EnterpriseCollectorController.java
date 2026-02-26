@@ -147,6 +147,7 @@ public class EnterpriseCollectorController {
                     .status(c.getStatus() != null ? c.getStatus().name().toLowerCase() : null)
                     .vehicleType(c.getVehicleType())
                     .vehiclePlate(c.getVehiclePlate())
+                    .violationCount(c.getViolationCount())
                     .build());
         }
 
