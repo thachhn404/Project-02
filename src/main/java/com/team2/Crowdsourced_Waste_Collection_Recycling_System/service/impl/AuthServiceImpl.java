@@ -40,9 +40,12 @@ import java.util.Date;
  * Hiện thực các nghiệp vụ xác thực/ủy quyền dựa trên JWT (Nimbus JOSE + JWT).
  *
  * Cách hoạt động tổng quát:
- * - Đăng nhập: kiểm tra email/password, sau đó phát hành JWT (HS512) chứa claim "scope".
- * - Logout/Refresh: thu hồi token cũ bằng cách lưu jti vào bảng invalidated_tokens.
- * - Introspect: kiểm tra token hợp lệ + chưa bị thu hồi (CustomJwtDecoder gọi để quyết định cho phép truy cập).
+ * - Đăng nhập: kiểm tra email/password, sau đó phát hành JWT (HS512) chứa claim
+ * "scope".
+ * - Logout/Refresh: thu hồi token cũ bằng cách lưu jti vào bảng
+ * invalidated_tokens.
+ * - Introspect: kiểm tra token hợp lệ + chưa bị thu hồi (CustomJwtDecoder gọi
+ * để quyết định cho phép truy cập).
  */
 public class AuthServiceImpl implements AuthService {
     UserRepository userRepository;
@@ -122,7 +125,12 @@ public class AuthServiceImpl implements AuthService {
 
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
 
-        if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (!authenticated)
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+
+        if ("suspended".equalsIgnoreCase(user.getStatus())) {
+            throw new AppException(ErrorCode.USER_SUSPENDED);
+        }
 
         Integer citizenId = resolveCitizenId(user);
         Integer collectorId = null;
@@ -134,8 +142,7 @@ public class AuthServiceImpl implements AuthService {
                 Collector collector = collectorRepository.findByUserId(user.getId())
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.CONFLICT,
-                                "Tài khoản COLLECTOR thiếu hồ sơ collector"
-                        ));
+                                "Tài khoản COLLECTOR thiếu hồ sơ collector"));
 
                 collectorId = collector.getId();
                 if (collector.getEnterprise() == null || collector.getEnterprise().getId() == null) {
@@ -175,8 +182,7 @@ public class AuthServiceImpl implements AuthService {
             String jit = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            InvalidatedToken invalidatedToken =
-                    InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
         } catch (Exception ignored) {
@@ -187,7 +193,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
-        // Introspect chỉ trả true/false để phía Resource Server quyết định có chấp nhận token.
+        // Introspect chỉ trả true/false để phía Resource Server quyết định có chấp nhận
+        // token.
         var token = request.getToken();
         boolean isValid = true;
 
