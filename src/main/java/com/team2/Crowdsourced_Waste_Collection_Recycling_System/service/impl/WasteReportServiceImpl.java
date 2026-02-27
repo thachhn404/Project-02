@@ -145,17 +145,31 @@ public class WasteReportServiceImpl implements WasteReportService {
         WasteReport saved = wasteReportRepository.save(report);
 
         List<Integer> categoryIds = resolveCategoryIds(request.getCategoryIds());
+        List<BigDecimal> quantities = request.getQuantities();
         List<WasteCategory> categories = wasteCategoryRepository.findAllById(categoryIds);
         if (categories.size() != categoryIds.size()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
+        if (quantities == null || quantities.size() != categoryIds.size()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
 
         List<WasteReportItem> reportItems = new ArrayList<>();
-        for (WasteCategory category : categories) {
+        Map<Integer, WasteCategory> categoriesById = categories.stream().collect(Collectors.toMap(WasteCategory::getId, c -> c));
+        for (int i = 0; i < categoryIds.size(); i += 1) {
+            Integer categoryId = categoryIds.get(i);
+            WasteCategory category = categoriesById.get(categoryId);
+            if (category == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
             WasteReportItem item = new WasteReportItem();
             item.setReport(saved);
             item.setWasteCategory(category);
-            item.setQuantity(null);
+            BigDecimal quantity = quantities.get(i);
+            if (quantity == null || quantity.signum() <= 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            item.setQuantity(quantity.setScale(4, RoundingMode.HALF_UP));
             item.setUnitSnapshot(category.getUnit());
             item.setCreatedAt(now);
             reportItems.add(item);
@@ -213,17 +227,31 @@ public class WasteReportServiceImpl implements WasteReportService {
 
         if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
             List<Integer> categoryIds = resolveCategoryIds(request.getCategoryIds());
+            List<BigDecimal> quantities = request.getQuantities();
+            if (quantities == null || quantities.size() != categoryIds.size()) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
             List<WasteCategory> categories = wasteCategoryRepository.findAllById(categoryIds);
             if (categories.size() != categoryIds.size()) {
                 throw new AppException(ErrorCode.INVALID_REQUEST);
             }
             wasteReportItemRepository.deleteByReport_Id(saved.getId());
             List<WasteReportItem> reportItems = new ArrayList<>();
-            for (WasteCategory category : categories) {
+            Map<Integer, WasteCategory> categoriesById = categories.stream().collect(Collectors.toMap(WasteCategory::getId, c -> c));
+            for (int i = 0; i < categoryIds.size(); i += 1) {
+                Integer categoryId = categoryIds.get(i);
+                WasteCategory category = categoriesById.get(categoryId);
+                if (category == null) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST);
+                }
                 WasteReportItem item = new WasteReportItem();
                 item.setReport(saved);
                 item.setWasteCategory(category);
-                item.setQuantity(null);
+                BigDecimal quantity = quantities.get(i);
+                if (quantity == null || quantity.signum() <= 0) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST);
+                }
+                item.setQuantity(quantity.setScale(4, RoundingMode.HALF_UP));
                 item.setUnitSnapshot(category.getUnit());
                 item.setCreatedAt(now);
                 reportItems.add(item);
@@ -532,6 +560,17 @@ public class WasteReportServiceImpl implements WasteReportService {
         }
         if (request.getCategoryIds() == null || request.getCategoryIds().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        if (request.getQuantities() == null || request.getQuantities().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        if (request.getQuantities().size() != request.getCategoryIds().size()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        for (BigDecimal q : request.getQuantities()) {
+            if (q == null || q.signum() <= 0) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
         }
     }
 

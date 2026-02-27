@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -28,6 +29,9 @@ public class CreateWasteReportRequest {
 
     @Size(min = 1, message = "Phải chọn ít nhất 1 danh mục")
     List<String> categoryIds;
+
+    @Size(min = 1, message = "Phải nhập số lượng cho từng danh mục")
+    List<BigDecimal> quantities;
 
     @NotNull(message = "Vĩ độ là bắt buộc")
     @DecimalMin(value = "-90.0", message = "Vĩ độ phải nằm trong khoảng [-90, 90]")
