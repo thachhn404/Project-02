@@ -18,6 +18,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.rewar
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.profile.CitizenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorReportService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteCategoryRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.reward.RecyclableRewardCalculator;
 import jakarta.transaction.Transactional;
@@ -50,6 +51,7 @@ public class CollectorReportServiceImpl implements CollectorReportService {
     private final CollectorRepository collectorRepository;
     private final WasteReportRepository wasteReportRepository;
     private final WasteCategoryRepository wasteCategoryRepository;
+    private final WasteReportItemRepository wasteReportItemRepository;
     private final CitizenRepository citizenRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final CloudinaryService cloudinaryService;
@@ -68,6 +70,8 @@ public class CollectorReportServiceImpl implements CollectorReportService {
         if (calculation.totalPoint() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "totalPoint must be > 0");
         }
+
+        ensureAllCategoriesCovered(collectionRequest, calculation);
 
         Collector collector = collectorRepository.getReferenceById(collectorId);
         BuiltItems builtItems = buildReportItems(calculation, now);
@@ -177,7 +181,6 @@ public class CollectorReportServiceImpl implements CollectorReportService {
                 .status(report.getStatus())
                 .collectorNote(report.getCollectorNote())
                 .totalPoint(report.getTotalPoint())
-                .actualWeightRecyclable(report.getActualWeightRecyclable())
                 .latitude(report.getLatitude())
                 .longitude(report.getLongitude())
                 .collectedAt(report.getCollectedAt())
@@ -204,6 +207,12 @@ public class CollectorReportServiceImpl implements CollectorReportService {
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "items is required");
         }
+        if (request.getLatitude() != null && (request.getLatitude() < -90.0 || request.getLatitude() > 90.0)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Latitude không hợp lệ");
+        }
+        if (request.getLongitude() != null && (request.getLongitude() < -180.0 || request.getLongitude() > 180.0)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Longitude không hợp lệ");
+        }
     }
 
     private CollectionRequest loadAndValidateCollectionRequest(Integer collectionRequestId, Integer collectorId) {
@@ -219,6 +228,24 @@ public class CollectorReportServiceImpl implements CollectorReportService {
                             collectionRequest.getStatus()));
         }
         return collectionRequest;
+    }
+
+    private void ensureAllCategoriesCovered(CollectionRequest collectionRequest, RecyclableRewardCalculator.CalculationResult calculation) {
+        Integer reportId = collectionRequest.getReport() != null ? collectionRequest.getReport().getId() : null;
+        if (reportId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu report của Collection Request");
+        }
+        var required = wasteReportItemRepository.findWithCategoryByReportId(reportId).stream()
+                .map(i -> i.getWasteCategory().getId())
+                .distinct()
+                .toList();
+        var provided = calculation.items().stream()
+                .map(r -> r.category().getId())
+                .distinct()
+                .toList();
+        if (!provided.containsAll(required)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu danh mục rác so với báo cáo ban đầu");
+        }
     }
 
     private void validateNotAlreadyReportedOrAwarded(CollectionRequest collectionRequest) {

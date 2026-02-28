@@ -1,6 +1,8 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.enterprise;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.AssignCollectorRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.AcceptWasteReportRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AssignCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EligibleCollectorResponse;
@@ -95,9 +97,11 @@ public class EnterpriseController {
     @Operation(summary = "Accept WasteReport và tạo CollectionRequest", description = "Enterprise accept báo cáo rác và tạo mới yêu cầu thu gom ở trạng thái PENDING")
     public ApiResponse<CollectionRequestActionResponse> acceptWasteReport(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String reportCode) {
+            @PathVariable String reportCode,
+            @RequestBody(required = false) AcceptWasteReportRequest body) {
         Integer enterpriseId = extractEnterpriseId(jwt);
-        Integer collectionRequestId = enterpriseRequestService.acceptWasteReport(enterpriseId, reportCode);
+        Integer collectionRequestId = enterpriseRequestService.acceptWasteReport(
+                enterpriseId, reportCode, body != null ? body.getEstimatedWeight() : null);
 
         return ApiResponse.<CollectionRequestActionResponse>builder()
                 .result(CollectionRequestActionResponse.builder()
@@ -106,6 +110,19 @@ public class EnterpriseController {
                         .actionAt(LocalDateTime.now())
                         .build())
                 .build();
+    }
+
+    @PostMapping("/reject/{reportCode}")
+    @PreAuthorize("hasRole('ENTERPRISE')")
+    @Operation(summary = "Reject WasteReport", description = "Enterprise từ chối báo cáo rác, cập nhật trạng thái REJECTED")
+    public ApiResponse<Void> rejectWasteReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String reportCode,
+            @RequestBody(required = false) RejectWasteReportRequest body) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        String reason = body != null ? body.getReason() : null;
+        enterpriseRequestService.rejectWasteReport(enterpriseId, reportCode, reason);
+        return ApiResponse.<Void>builder().message("Rejected").build();
     }
 
     private Integer extractEnterpriseId(Jwt jwt) {

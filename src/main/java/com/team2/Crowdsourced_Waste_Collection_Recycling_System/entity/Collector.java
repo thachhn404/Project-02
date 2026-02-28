@@ -68,15 +68,6 @@ public class Collector {
     @Column(name = "last_location_update")
     private LocalDateTime lastLocationUpdate;
 
-    @Column(name = "total_collections")
-    private Integer totalCollections;
-
-    @Column(name = "successful_collections")
-    private Integer successfulCollections;
-
-    @Column(name = "total_weight_collected", precision = 12, scale = 2)
-    private BigDecimal totalWeightCollected;
-
     @Column(name = "violation_count")
     private Integer violationCount = 0;
 

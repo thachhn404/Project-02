@@ -53,37 +53,11 @@ public class Feedback {
     @Column(name = "content", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
-    @Lob
-    @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
-    private String images;
-
     @Column(name = "severity", length = 20)
     private String severity;
 
     @Column(name = "status", length = 20)
     private String status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    private User assignedTo;
-
-    @Column(name = "assigned_at")
-    private LocalDateTime assignedAt;
-
-    @Lob
-    @Column(name = "resolution", columnDefinition = "NVARCHAR(MAX)")
-    private String resolution;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resolved_by")
-    private User resolvedBy;
-
-    @Column(name = "resolved_at")
-    private LocalDateTime resolvedAt;
-
-    @Lob
-    @Column(name = "responses", columnDefinition = "NVARCHAR(MAX)")
-    private String responses;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

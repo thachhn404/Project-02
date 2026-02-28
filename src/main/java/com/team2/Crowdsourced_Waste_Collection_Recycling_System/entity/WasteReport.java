@@ -11,7 +11,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -50,9 +49,6 @@ public class WasteReport {
     @Column(name = "waste_type", nullable = false, length = 20)
     private String wasteType;
 
-    @Column(name = "estimated_weight", precision = 10, scale = 2)
-    private BigDecimal estimatedWeight; // Khối lượng ước tính (kg)
-
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
 
@@ -62,12 +58,6 @@ public class WasteReport {
     @Column(name = "address", length = 500)
     @Nationalized
     private String address;
-
-    // @Column(name = "ward", length = 100)
-    // private String ward;
-
-    // @Column(name = "city", length = 100)
-    // private String city;
 
     @Lob
     @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
@@ -80,34 +70,11 @@ public class WasteReport {
     @Column(name = "status", length = 20)
     private WasteReportStatus status;
 
-    // @Column(name = "is_valid")
-    // private Boolean isValid;
-
-    // @Column(name = "validation_note", length = 500)
-    // private String validationNote;
-
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "validated_by")
-    // private User validatedBy;
-
-    // @Column(name = "validated_at")
-    // private LocalDateTime validatedAt;
-
-    // @Column(name = "points_awarded")
-    // private Integer pointsAwarded;
-
-    // @Column(name = "quality_rating")
-    // private Integer qualityRating;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enterprise_id")
-    private Enterprise enterprise;
 
     @Column(name = "accepted_at")
     private LocalDateTime acceptedAt;

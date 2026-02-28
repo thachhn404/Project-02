@@ -29,9 +29,9 @@ public interface CitizenFeatureMapper {
     ComplaintResponse toComplaintResponse(Feedback feedback);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "citizen", ignore = true) // set in service
-    @Mapping(target = "collectionRequest", ignore = true) // set in service
-    @Mapping(target = "feedbackCode", ignore = true) // set in service
+    @Mapping(target = "citizen", ignore = true)
+    @Mapping(target = "collectionRequest", ignore = true)
+    @Mapping(target = "feedbackCode", ignore = true)
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "updatedAt", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "status", constant = "OPEN")
@@ -39,12 +39,5 @@ public interface CitizenFeatureMapper {
     @Mapping(target = "subject", expression = "java(\"Complaint for Report #\" + request.getReportId() + \" - \" + request.getType())")
     @Mapping(target = "content", source = "content")
     @Mapping(target = "feedbackType", source = "type")
-    @Mapping(target = "images", ignore = true)
-    @Mapping(target = "assignedTo", ignore = true)
-    @Mapping(target = "assignedAt", ignore = true)
-    @Mapping(target = "resolution", ignore = true)
-    @Mapping(target = "resolvedBy", ignore = true)
-    @Mapping(target = "resolvedAt", ignore = true)
-    @Mapping(target = "responses", ignore = true)
     Feedback toFeedback(CreateComplaintRequest request);
 }

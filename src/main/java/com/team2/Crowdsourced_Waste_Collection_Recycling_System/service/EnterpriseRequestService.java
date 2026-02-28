@@ -9,4 +9,8 @@ public interface EnterpriseRequestService {
      * @return ID của CollectionRequest đã tạo
      */
     Integer acceptWasteReport(Integer enterpriseId, String reportCode);
+
+    Integer acceptWasteReport(Integer enterpriseId, String reportCode, java.math.BigDecimal estimatedWeight);
+
+    void rejectWasteReport(Integer enterpriseId, String reportCode, String reason);
 }

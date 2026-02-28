@@ -127,7 +127,6 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                 .roleName(user.getRole() != null ? user.getRole().getRoleName() : null)
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
-                .lastLogin(user.getLastLogin())
                 .build();
     }
 }

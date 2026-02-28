@@ -3,7 +3,6 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
 
 /**
  * Response trả về thông tin tài khoản người dùng dành cho Admin.
@@ -19,6 +18,5 @@ public class AdminUserResponse {
     private String roleCode;
     private String roleName;
     private String status; // "active" | "suspended"
-    private LocalDateTime createdAt;
-    private LocalDateTime lastLogin;
+    private java.time.LocalDateTime createdAt;
 }

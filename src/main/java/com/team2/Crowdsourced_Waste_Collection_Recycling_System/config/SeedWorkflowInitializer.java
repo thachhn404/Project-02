@@ -91,7 +91,6 @@ public class SeedWorkflowInitializer {
             report.setCitizen(citizen);
             report.setWasteType("RECYCLABLE");
             report.setDescription("Modular seed " + reportCode);
-            report.setEstimatedWeight(new BigDecimal("1.00"));
             report.setLatitude(new BigDecimal("10.77653000"));
             report.setLongitude(new BigDecimal("106.70098000"));
             report.setAddress("Seed address");
@@ -200,4 +199,3 @@ public class SeedWorkflowInitializer {
         repo.save(feedback);
     }
 }
-

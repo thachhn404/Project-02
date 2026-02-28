@@ -58,9 +58,6 @@ public class CollectorReport {
     @Column(name = "total_point")
     private Integer totalPoint;
 
-    @Column(name = "actual_weight_recyclable")
-    private BigDecimal actualWeightRecyclable;
-
     @Column(name = "collected_at")
     private LocalDateTime collectedAt;
 

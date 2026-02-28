@@ -30,8 +30,6 @@ public class CollectorReportResponse {
 
     Integer totalPoint;
 
-    BigDecimal actualWeightRecyclable;
-
     BigDecimal latitude;
 
     BigDecimal longitude;

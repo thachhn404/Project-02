@@ -9,7 +9,6 @@ import lombok.Setter;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -36,8 +35,7 @@ public class User {
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
+    
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
@@ -50,8 +48,7 @@ public class User {
     @Column(name = "status", length = 20)
     private String status;
 
-    @Column(name = "last_login")
-    private LocalDateTime lastLogin;
+    
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -46,9 +46,9 @@ app:
     enabled: true
 
 cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME:dt98write}
-  api-key: ${CLOUDINARY_API_KEY:313623537529164}
-  api-secret: ${CLOUDINARY_API_SECRET:Y7h_q5pnL55iDvvqFDKjXGZu3co}
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dawzawtbz}
+  api-key: ${CLOUDINARY_API_KEY:647161479214626}
+  api-secret: ${CLOUDINARY_API_SECRET:vFNgCCXljSShEbrbn7EAls1Lfh0}
 
 
 

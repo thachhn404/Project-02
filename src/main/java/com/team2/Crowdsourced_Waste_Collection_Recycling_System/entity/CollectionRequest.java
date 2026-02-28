@@ -79,5 +79,5 @@ public class CollectionRequest {
     private LocalDateTime updatedAt;
 
     @Column(name = "sla_violated")
-    private Boolean slaViolated = false;
+    private Boolean slaViolated;
 }

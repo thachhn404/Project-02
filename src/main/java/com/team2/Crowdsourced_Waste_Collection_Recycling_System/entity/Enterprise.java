@@ -14,7 +14,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Nationalized;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,28 +36,11 @@ public class Enterprise {
     @Nationalized
     private String address;
 
-    @Column(name = "ward", length = 100)
-    @Nationalized
-    private String ward;
-
-    @Column(name = "city", length = 100)
-    @Nationalized
-    private String city;
-
     @Column(name = "phone", length = 20)
     private String phone;
 
     @Column(name = "email", length = 255)
     private String email;
-
-    @Column(name = "license_number", length = 100)
-    private String licenseNumber;
-
-    @Column(name = "tax_code", length = 50)
-    private String taxCode;
-
-    @Column(name = "capacity_kg_per_day", precision = 12, scale = 2)
-    private BigDecimal capacityKgPerDay;
 
     @Lob
     @Column(name = "supported_waste_type_codes", columnDefinition = "NVARCHAR(MAX)")
@@ -74,9 +56,6 @@ public class Enterprise {
 
     @Column(name = "status", length = 20)
     private String status;
-
-    @Column(name = "total_collected_weight", precision = 12, scale = 2)
-    private BigDecimal totalCollectedWeight;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

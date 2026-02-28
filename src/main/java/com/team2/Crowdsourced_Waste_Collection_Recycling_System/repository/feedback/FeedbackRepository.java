@@ -24,8 +24,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Integer> {
     List<Feedback> findBySeverity(String severity);
     
     List<Feedback> findByCollectionRequestId(Integer collectionRequestId);
-    
-    List<Feedback> findByAssignedToId(Integer assignedToId);
+
     
     @Query("SELECT f FROM Feedback f WHERE f.citizen.id = :citizenId ORDER BY f.createdAt DESC")
     List<Feedback> findByCitizenIdOrderByCreatedAtDesc(@Param("citizenId") Integer citizenId);
@@ -36,14 +35,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Integer> {
         @Param("severity") String severity
     );
     
-    @Query("SELECT f FROM Feedback f WHERE f.assignedTo.id = :userId AND f.status = :status")
-    List<Feedback> findByAssignedToIdAndStatus(
-        @Param("userId") Integer userId,
-        @Param("status") String status
-    );
-    
-    @Query("SELECT f FROM Feedback f WHERE f.status = 'pending' AND f.assignedTo IS NULL")
-    List<Feedback> findUnassignedFeedbacks();
+
     
     @Query("SELECT f FROM Feedback f WHERE f.createdAt BETWEEN :startDate AND :endDate")
     List<Feedback> findByDateRange(
@@ -61,8 +53,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Integer> {
     @Query("SELECT COUNT(f) FROM Feedback f WHERE f.status = :status")
     Long countByStatus(@Param("status") String status);
     
-    @Query("SELECT COUNT(f) FROM Feedback f WHERE f.assignedTo.id = :userId AND f.status != 'resolved'")
-    Long countPendingByAssignedTo(@Param("userId") Integer userId);
+
     
     @Query("SELECT f FROM Feedback f WHERE f.severity = 'high' AND f.status IN ('pending', 'in_progress') ORDER BY f.createdAt ASC")
     List<Feedback> findUrgentFeedbacks();

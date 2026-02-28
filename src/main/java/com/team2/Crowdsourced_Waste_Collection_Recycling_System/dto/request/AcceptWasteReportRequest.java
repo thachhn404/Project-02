@@ -1,4 +1,4 @@
-package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response;
+package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -7,16 +7,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CitizenRewardHistoryResponse {
-    Integer reportId;
-    String reportCode;
-    Integer point;
-    LocalDateTime createdAt;
+public class AcceptWasteReportRequest {
+    BigDecimal estimatedWeight;
 }

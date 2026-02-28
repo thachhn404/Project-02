@@ -30,6 +30,12 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
     @Override
     @Transactional
     public Integer acceptWasteReport(Integer enterpriseId, String reportCode) {
+        return acceptWasteReport(enterpriseId, reportCode, null);
+    }
+
+    @Override
+    @Transactional
+    public Integer acceptWasteReport(Integer enterpriseId, String reportCode, java.math.BigDecimal estimatedWeight) {
         // Validate input
         if (enterpriseId == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
@@ -70,7 +76,6 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
         // Generate unique request code
         String requestCode = generateRequestCode();
 
-        // Create CollectionRequest
         CollectionRequest collectionRequest = new CollectionRequest();
         collectionRequest.setRequestCode(requestCode);
         collectionRequest.setReport(wasteReport);
@@ -81,12 +86,42 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
 
         CollectionRequest savedRequest = collectionRequestRepository.save(collectionRequest);
 
-        // Update WasteReport status to ACCEPTED_ENTERPRISE
         wasteReport.setStatus(WasteReportStatus.ACCEPTED_ENTERPRISE);
+        wasteReport.setAcceptedAt(LocalDateTime.now());
         wasteReport.setUpdatedAt(LocalDateTime.now());
         wasteReportRepository.save(wasteReport);
 
         return savedRequest.getId();
+    }
+
+    @Override
+    @Transactional
+    public void rejectWasteReport(Integer enterpriseId, String reportCode, String reason) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+        if (reportCode == null || reportCode.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu report_code");
+        }
+
+        Enterprise enterprise = enterpriseRepository.findById(enterpriseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enterprise không tồn tại"));
+
+        WasteReport wasteReport = wasteReportRepository.findByReportCode(reportCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Waste Report không tồn tại"));
+
+        if (wasteReport.getStatus() != WasteReportStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Báo cáo này đã được xử lý");
+        }
+
+        if (!isSupportedWasteType(enterprise, wasteReport.getWasteType()) || !isInServiceArea(enterprise, wasteReport)) {
+            // vẫn cho phép reject nhưng đã lọc từ trước nên hiếm khi xảy ra
+        }
+
+        wasteReport.setStatus(WasteReportStatus.REJECTED);
+        wasteReport.setRejectionReason(reason);
+        wasteReport.setUpdatedAt(LocalDateTime.now());
+        wasteReportRepository.save(wasteReport);
     }
 
     /**

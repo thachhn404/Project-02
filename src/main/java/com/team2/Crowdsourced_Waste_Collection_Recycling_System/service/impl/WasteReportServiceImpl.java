@@ -130,19 +130,24 @@ public class WasteReportServiceImpl implements WasteReportService {
 
         WasteReport report = new WasteReport();
         report.setCitizen(citizen);
-        report.setWasteType(request.getWasteType().trim().toUpperCase());
+        report.setWasteType("RECYCLABLE");
         report.setDescription(request.getDescription());
         report.setLatitude(latitude);
         report.setLongitude(longitude);
         report.setAddress(request.getAddress());
         report.setStatus(WasteReportStatus.PENDING);
 
-        String reportCode = "WR-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4);
-        report.setReportCode(reportCode);
+        report.setReportCode(generateTempReportCode());
         report.setCreatedAt(now);
         report.setUpdatedAt(now);
 
         WasteReport saved = wasteReportRepository.save(report);
+
+        String finalCode = generateReportCodeFromId(saved.getId());
+        if (!finalCode.equals(saved.getReportCode())) {
+            saved.setReportCode(finalCode);
+            saved = wasteReportRepository.save(saved);
+        }
 
         List<Integer> categoryIds = resolveCategoryIds(request.getCategoryIds());
         List<BigDecimal> quantities = request.getQuantities();
@@ -165,11 +170,6 @@ public class WasteReportServiceImpl implements WasteReportService {
             WasteReportItem item = new WasteReportItem();
             item.setReport(saved);
             item.setWasteCategory(category);
-            BigDecimal quantity = quantities.get(i);
-            if (quantity == null || quantity.signum() <= 0) {
-                throw new AppException(ErrorCode.INVALID_REQUEST);
-            }
-            item.setQuantity(quantity.setScale(4, RoundingMode.HALF_UP));
             item.setUnitSnapshot(category.getUnit());
             item.setCreatedAt(now);
             reportItems.add(item);
@@ -189,6 +189,17 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .build();
     }
 
+    private String generateTempReportCode() {
+        return "TMP" + System.nanoTime();
+    }
+
+    private String generateReportCodeFromId(Integer id) {
+        if (id == null || id <= 0) {
+            return "WR000";
+        }
+        return "WR" + String.format("%03d", id);
+    }
+
     @Override
     @Transactional
     public WasteReportResponse updateReport(Integer reportId, UpdateWasteReportRequest request, String citizenEmail) {
@@ -205,9 +216,7 @@ public class WasteReportServiceImpl implements WasteReportService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ được chỉnh sửa khi status = PENDING");
         }
 
-        if (request.getWasteType() != null && !request.getWasteType().isBlank()) {
-            report.setWasteType(request.getWasteType().trim().toUpperCase());
-        }
+        // Bỏ cập nhật wasteType, luôn cố định RECYCLABLE
         if (request.getDescription() != null) {
             report.setDescription(request.getDescription());
         }
@@ -247,11 +256,6 @@ public class WasteReportServiceImpl implements WasteReportService {
                 WasteReportItem item = new WasteReportItem();
                 item.setReport(saved);
                 item.setWasteCategory(category);
-                BigDecimal quantity = quantities.get(i);
-                if (quantity == null || quantity.signum() <= 0) {
-                    throw new AppException(ErrorCode.INVALID_REQUEST);
-                }
-                item.setQuantity(quantity.setScale(4, RoundingMode.HALF_UP));
                 item.setUnitSnapshot(category.getUnit());
                 item.setCreatedAt(now);
                 reportItems.add(item);
@@ -555,9 +559,12 @@ public class WasteReportServiceImpl implements WasteReportService {
         if (request.getLatitude() == null || request.getLongitude() == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
-        if (request.getWasteType() == null || request.getWasteType().isBlank()) {
-            throw new AppException(ErrorCode.WASTE_TYPE_NOT_FOUND);
+        double lat = request.getLatitude();
+        double lng = request.getLongitude();
+        if (lat < -90.0 || lat > 90.0 || lng < -180.0 || lng > 180.0) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
+        // Bỏ yêu cầu nhập wasteType: luôn cố định RECYCLABLE
         if (request.getCategoryIds() == null || request.getCategoryIds().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }

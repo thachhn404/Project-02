@@ -83,7 +83,6 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
         validateProcessingEligibility(enterprise, report);
 
         report.setStatus(WasteReportStatus.ACCEPTED_ENTERPRISE);
-        report.setEnterprise(enterprise);
         report.setAcceptedAt(LocalDateTime.now());
         
         wasteReportRepository.save(report);
@@ -105,7 +104,6 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
         }
 
         report.setStatus(WasteReportStatus.REJECTED);
-        report.setEnterprise(enterprise);
         report.setRejectionReason(reason);
         
         wasteReportRepository.save(report);

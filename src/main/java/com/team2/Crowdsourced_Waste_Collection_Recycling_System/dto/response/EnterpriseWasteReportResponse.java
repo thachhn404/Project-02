@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -22,8 +21,8 @@ public class EnterpriseWasteReportResponse {
     String wasteType;
     String description;
     String address;
-    BigDecimal latitude;
-    BigDecimal longitude;
+    java.math.BigDecimal latitude;
+    java.math.BigDecimal longitude;
     String images;
     LocalDateTime createdAt;
 }

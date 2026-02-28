@@ -51,6 +51,8 @@ public class FileUpLoadUtil {
         if (!ALLOWED_IMAGE_EXTENSIONS.contains(normalizedExtension)) {
             throw new IllegalArgumentException("Only jpg, jpeg, png, gif, bmp files are supported");
         }
+
+        // Bỏ kiểm tra kích thước tối thiểu 1080px theo yêu cầu
     }
      public static String getFileName(final String name) {
          final DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);

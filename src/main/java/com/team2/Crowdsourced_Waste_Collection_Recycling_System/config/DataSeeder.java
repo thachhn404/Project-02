@@ -196,8 +196,6 @@ public class DataSeeder {
             category.setName(name);
             category.setUnit(unit);
             category.setPointPerUnit(pointPerUnit);
-            category.setCreatedAt(now);
-            category.setUpdatedAt(now);
             return repo.save(category);
         });
     }
@@ -398,7 +396,6 @@ public class DataSeeder {
             report.setCitizen(citizen);
             report.setWasteType("RECYCLABLE");
             report.setDescription("Seed report " + reportCode);
-            report.setEstimatedWeight(new BigDecimal("1.00"));
             report.setLatitude(new BigDecimal("10.77653000"));
             report.setLongitude(new BigDecimal("106.70098000"));
             report.setAddress("Seed address");

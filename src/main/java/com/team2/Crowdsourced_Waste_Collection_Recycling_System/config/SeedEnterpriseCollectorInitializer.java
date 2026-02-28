@@ -28,6 +28,7 @@ public class SeedEnterpriseCollectorInitializer {
             User entUser = userRepository.findByEmail("enterprise@test.com").orElse(null);
             if (entUser != null) {
                 Enterprise enterprise = createEnterpriseIfNotFound(enterpriseRepository, entUser);
+                ensureEnterpriseSeedFields(enterpriseRepository, enterprise);
                 linkEnterpriseToUserIfMissing(userRepository, entUser, enterprise);
 
                 userRepository.findByEmail("collector@test.com")
@@ -48,10 +49,34 @@ public class SeedEnterpriseCollectorInitializer {
             enterprise.setName("Test Enterprise");
             enterprise.setEmail(email);
             enterprise.setStatus("active");
+            enterprise.setSupportedWasteTypeCodes("PLASTIC,PAPER,RECYCLABLE");
+            enterprise.setServiceWards("Ward 1,Ward 2");
+            enterprise.setServiceCities("City A");
             enterprise.setCreatedAt(LocalDateTime.now());
             enterprise.setUpdatedAt(LocalDateTime.now());
             return enterpriseRepository.save(enterprise);
         });
+    }
+
+    private void ensureEnterpriseSeedFields(EnterpriseRepository enterpriseRepository, Enterprise enterprise) {
+        if (enterprise == null || enterprise.getId() == null) return;
+        boolean changed = false;
+        if (enterprise.getSupportedWasteTypeCodes() == null || enterprise.getSupportedWasteTypeCodes().isBlank()) {
+            enterprise.setSupportedWasteTypeCodes("PLASTIC,PAPER,RECYCLABLE");
+            changed = true;
+        }
+        if (enterprise.getServiceWards() == null || enterprise.getServiceWards().isBlank()) {
+            enterprise.setServiceWards("Ward 1,Ward 2");
+            changed = true;
+        }
+        if (enterprise.getServiceCities() == null || enterprise.getServiceCities().isBlank()) {
+            enterprise.setServiceCities("City A");
+            changed = true;
+        }
+        if (changed) {
+            enterprise.setUpdatedAt(LocalDateTime.now());
+            enterpriseRepository.save(enterprise);
+        }
     }
 
     private void linkEnterpriseToUserIfMissing(UserRepository userRepository, User enterpriseUser, Enterprise enterprise) {
@@ -78,4 +103,3 @@ public class SeedEnterpriseCollectorInitializer {
         });
     }
 }
-

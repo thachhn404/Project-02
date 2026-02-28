@@ -17,7 +17,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -39,9 +38,6 @@ public class WasteReportItem {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "waste_category_id", nullable = false)
     private WasteCategory wasteCategory;
-
-    @Column(name = "quantity", precision = 19, scale = 4)
-    private BigDecimal quantity;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "unit_snapshot", length = 20)

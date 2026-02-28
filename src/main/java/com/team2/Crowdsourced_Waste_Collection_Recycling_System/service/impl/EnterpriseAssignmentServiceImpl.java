@@ -63,6 +63,10 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         }
 
         LocalDateTime now = LocalDateTime.now();
+        int hour = now.getHour();
+        if (hour < 7 || hour >= 17) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ phân công trong khung giờ 7h–17h");
+        }
         int updated = collectionRequestRepository.assignCollector(requestId, collectorId, enterpriseId);
         if (updated == 0) {
             CollectionRequest request = collectionRequestRepository.findById(requestId)
@@ -192,7 +196,7 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         }
         WasteReport report = request.getReport();
         LocalDateTime created = request.getCreatedAt();
-        int sla = 72;
+        int sla = computeSlaHours(report != null ? report.getWasteType() : null);
         LocalDateTime due = created != null ? created.plusHours(sla) : null;
         Long remaining = null;
         if (due != null) {
@@ -210,6 +214,19 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
                 .hoursRemaining(remaining)
                 .priority("FCFS")
                 .build();
+    }
+
+    private int computeSlaHours(String wasteType) {
+        if (wasteType == null) {
+            return 72;
+        }
+        String code = wasteType.trim().toUpperCase();
+        return switch (code) {
+            case "HAZARDOUS" -> 24;
+            case "HOUSEHOLD" -> 48;
+            case "RECYCLABLE" -> 72;
+            default -> 72;
+        };
     }
 
     private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {

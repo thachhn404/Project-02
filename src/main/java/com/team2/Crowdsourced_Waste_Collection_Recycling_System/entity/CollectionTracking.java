@@ -53,10 +53,6 @@ public class CollectionTracking {
     @Nationalized
     private String note;
 
-    @Lob
-    @Column(name = "images", columnDefinition = "NVARCHAR(MAX)")
-    private String images;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

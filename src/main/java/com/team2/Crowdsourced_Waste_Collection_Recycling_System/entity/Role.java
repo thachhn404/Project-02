@@ -29,16 +29,6 @@ public class Role {
     @Nationalized
     private String roleName;
 
-    @Column(name = "description", length = 500)
-    @Nationalized
-    private String description;
-
-    @Column(name = "is_active")
-    private Boolean isActive;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
     private Set<RolePermission> rolePermissions;
 }

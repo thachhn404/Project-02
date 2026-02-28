@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,19 +18,12 @@ public class EnterpriseResponse {
     Integer id;
     String name;
     String address;
-    String ward;
-    String city;
     String phone;
     String email;
-    String licenseNumber;
-    String taxCode;
-    BigDecimal capacityKgPerDay;
     String supportedWasteTypeCodes;
     String serviceWards;
     String serviceCities;
     String status;
-    BigDecimal totalCollectedWeight;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }
-

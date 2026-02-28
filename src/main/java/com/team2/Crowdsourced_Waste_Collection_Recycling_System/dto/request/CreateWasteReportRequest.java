@@ -24,7 +24,6 @@ public class CreateWasteReportRequest {
     @Size(min = 1, message = "Cần ít nhất 1 ảnh")
     List<MultipartFile> images;
 
-    @NotNull(message = "Loại rác là bắt buộc")
     String wasteType;
 
     @Size(min = 1, message = "Phải chọn ít nhất 1 danh mục")
