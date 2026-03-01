@@ -87,27 +87,18 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
         Collector currentCollector = request.getCollector();
         List<Collector> availableCollectors = collectorRepository.findAvailableCollectors(request.getEnterprise().getId());
 
-        if (request.getReport() == null || request.getReport().getLatitude() == null || request.getReport().getLongitude() == null) {
-            return false;
-        }
-
-        double minDistance = workRuleProperties.getReassignRadiusKm();
         Collector bestCollector = null;
-        double reqLat = request.getReport().getLatitude().doubleValue();
-        double reqLon = request.getReport().getLongitude().doubleValue();
+        long bestActiveTasks = Long.MAX_VALUE;
 
         for (Collector c : availableCollectors) {
             if (currentCollector != null && c.getId().equals(currentCollector.getId())) {
                 continue;
             }
-            if (c.getCurrentLatitude() == null || c.getCurrentLongitude() == null) {
-                continue;
-            }
-
-            double dist = calculateDistance(reqLat, reqLon, c.getCurrentLatitude().doubleValue(),
-                    c.getCurrentLongitude().doubleValue());
-            if (dist <= minDistance) {
-                minDistance = dist;
+            long active = collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ASSIGNED)
+                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ACCEPTED_COLLECTOR)
+                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ON_THE_WAY);
+            if (active < bestActiveTasks) {
+                bestActiveTasks = active;
                 bestCollector = c;
             }
         }
@@ -194,17 +185,5 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
         tracking.setNote(note);
         tracking.setCreatedAt(LocalDateTime.now());
         collectionTrackingRepository.save(tracking);
-    }
-
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        // Haversine formula
-        final int R = 6371; // Radius of the earth
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
     }
 }

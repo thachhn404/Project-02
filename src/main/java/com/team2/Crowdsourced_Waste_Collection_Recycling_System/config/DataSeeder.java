@@ -475,7 +475,7 @@ public class DataSeeder {
         if (request == null || request.getId() == null) {
             return;
         }
-        if (reportRepository.findByCollectionRequestId(request.getId()).isPresent()) {
+        if (reportRepository.existsByCollectionRequest_Id(request.getId())) {
             return;
         }
         CollectorReport report = new CollectorReport();

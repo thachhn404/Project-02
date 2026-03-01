@@ -16,4 +16,5 @@ public class WorkRuleProperties {
     private int workingStartHour = 7;
     private int workingEndHour = 17;
     private double reassignRadiusKm = 10.0;
+    private double reportRadiusKm = 0.5;
 }

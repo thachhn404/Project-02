@@ -162,7 +162,7 @@ public class SeedWorkflowInitializer {
             CollectionRequest request,
             LocalDateTime collectedAt) {
         if (request == null || request.getId() == null) return;
-        if (reportRepository.findByCollectionRequestId(request.getId()).isPresent()) return;
+        if (reportRepository.existsByCollectionRequest_Id(request.getId())) return;
         CollectorReport report = new CollectorReport();
         report.setCollectionRequest(request);
         report.setStatus(CollectorReportStatus.COMPLETED);

@@ -1,20 +1,16 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.collector;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateCollectorReportRequest;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CollectorReportItemRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectTaskRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.UpdateTaskStatusRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.*;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl.CollectorReportCreationService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorReportService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
- 
-import jakarta.validation.constraints.Size;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
- 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,10 +19,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Controller dành cho Người thu gom (Collector).
@@ -40,6 +34,7 @@ import java.util.List;
 public class CollectionController {
     private final CollectorService collectorService;
     private final CollectorReportService collectorReportService;
+    private final CollectorReportCreationService collectorReportCreationService;
 
     /**
      * Lấy danh sách task của collector.
@@ -192,58 +187,32 @@ public class CollectionController {
                 .build();
     }
 
-    /**
-     * Collector xác nhận hoàn tất thu gom (bắt buộc có ảnh):
-     * - Tạo collector_report (kèm ảnh)
-     * - Cập nhật collection_request.status: collected -> completed
-     */
+    @GetMapping("/{requestId}/create_report")
+    @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Dữ liệu tạo report", description = "Lấy WasteReport + danh mục để Collector tạo báo cáo")
+    public ApiResponse<ReportCollectorResponse> getCreateReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer requestId) {
+        Integer collectorId = extractCollectorId(jwt);
+        ReportCollectorResponse response = collectorReportService.getCreateReport(requestId, collectorId);
+        return ApiResponse.<ReportCollectorResponse>builder()
+                .result(response)
+                .build();
+    }
+
     @PostMapping(value = "/{requestId}/complete", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('COLLECTOR')")
-    public ApiResponse<CollectorReportResponse> completeTask(
+    @Operation(summary = "Tạo báo cáo thu gom", description = "Nhập khối lượng, ghi chú, GPS và upload ảnh")
+    public ApiResponse<CollectorReportResponse> createCollectorReport(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId,
-            @Valid @RequestPart("report") CreateCollectorReportRequest request,
-            @RequestPart("images") @NotNull @Size(min = 1) List<MultipartFile> images) {
+            @Valid @ModelAttribute CreateCollectorReportRequest request) {
         Integer collectorId = extractCollectorId(jwt);
-        request.setCollectionRequestId(requestId);
-        CollectorReportResponse response = collectorReportService.createCollectorReport(request, images, collectorId);
+        CollectorReportResponse response = collectorReportCreationService.createCollectorReport(requestId, collectorId, request);
         return ApiResponse.<CollectorReportResponse>builder()
                 .result(response)
                 .build();
     }
-
-    /**
-     * Biến thể cho phép gửi "các trường bình thường" qua form-data (@ModelAttribute),
-     * tương tự Citizen. Dữ liệu danh mục và số lượng đi theo mảng.
-     */
-    @PostMapping(value = "/{requestId}/complete-form", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('COLLECTOR')")
-    @Operation(summary = "Hoàn tất thu gom (form)", description = "Gửi báo cáo bằng các trường form-data thông thường")
-    public ApiResponse<CollectorReportResponse> completeTaskForm(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer requestId,
-            @Valid @ModelAttribute com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateCollectorReportFormRequest form,
-            @RequestPart("images") @NotNull @Size(min = 1) List<MultipartFile> images) {
-        Integer collectorId = extractCollectorId(jwt);
-        CreateCollectorReportRequest request = CreateCollectorReportRequest.builder()
-                .collectionRequestId(requestId)
-                .collectorNote(form.getCollectorNote())
-                .address(form.getAddress())
-                .latitude(form.getLatitude())
-                .longitude(form.getLongitude())
-                .actualWeightKg(form.getActualWeightKg())
-                .items(form.getItems())
-                .build();
-
-        CollectorReportResponse response = collectorReportService.createCollectorReport(request, images, collectorId);
-        return ApiResponse.<CollectorReportResponse>builder()
-                .result(response)
-                .build();
-    }
-
-    /**
-     * Lấy report theo collection request
-     */
     @GetMapping("/{requestId}/report")
     @PreAuthorize("hasRole('COLLECTOR')")
     @Operation(summary = "Xem report theo yêu cầu", description = "Lấy collector_report gắn với collection request")

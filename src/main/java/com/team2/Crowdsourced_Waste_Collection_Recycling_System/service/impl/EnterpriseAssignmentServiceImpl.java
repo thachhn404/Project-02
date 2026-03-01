@@ -157,7 +157,6 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         if (requestId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu request_id");
         }
-        double maxRadius = radiusKm != null ? radiusKm : 10.0;
 
         CollectionRequest request = collectionRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"));
@@ -169,21 +168,13 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         if (request.getStatus() != CollectionRequestStatus.ACCEPTED_ENTERPRISE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ hỗ trợ tìm collector khi request ở trạng thái ACCEPTED_ENTERPRISE");
         }
-        WasteReport report = request.getReport();
-        if (report == null || report.getLatitude() == null || report.getLongitude() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collection Request thiếu toạ độ để tính khoảng cách");
-        }
-        double reqLat = report.getLatitude().doubleValue();
-        double reqLng = report.getLongitude().doubleValue();
 
         var collectors = collectorRepository.findByEnterprise_IdOrderByCreatedAtDesc(enterpriseId);
         LocalDateTime now = LocalDateTime.now();
         return collectors.stream()
                 .filter(c -> c.getStatus() != null && (c.getStatus() == CollectorStatus.ACTIVE || c.getStatus() == CollectorStatus.AVAILABLE))
                 .filter(c -> c.getStatus() != CollectorStatus.SUSPEND)
-                .filter(c -> c.getCurrentLatitude() != null && c.getCurrentLongitude() != null)
                 .map(c -> {
-                    double dist = haversineKm(reqLat, reqLng, c.getCurrentLatitude().doubleValue(), c.getCurrentLongitude().doubleValue());
                     boolean online = c.getLastLocationUpdate() != null && Duration.between(c.getLastLocationUpdate(), now).toMinutes() <= 15;
                     int active = (int) (
                             collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ASSIGNED)
@@ -194,19 +185,14 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
                             .id(c.getId())
                             .fullName(c.getFullName())
                             .status(c.getStatus() != null ? c.getStatus().name() : null)
-                            .distanceKm(dist)
+                            .distanceKm(null)
                             .online(online)
-                            .currentLatitude(c.getCurrentLatitude())
-                            .currentLongitude(c.getCurrentLongitude())
                             .activeTaskCount(active)
                             .build();
                 })
-                .filter(dto -> dto.getDistanceKm() != null && dto.getDistanceKm() <= maxRadius)
                 .sorted((a, b) -> {
                     int onlineCmp = Boolean.compare(Boolean.TRUE.equals(b.getOnline()), Boolean.TRUE.equals(a.getOnline()));
                     if (onlineCmp != 0) return onlineCmp;
-                    int distCmp = Double.compare(a.getDistanceKm(), b.getDistanceKm());
-                    if (distCmp != 0) return distCmp;
                     return Integer.compare(a.getActiveTaskCount(), b.getActiveTaskCount());
                 })
                 .collect(Collectors.toList());
@@ -262,14 +248,4 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         };
     }
 
-    private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {
-        final double R = 6371.0;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
 }

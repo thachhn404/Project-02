@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -388,5 +389,22 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     int confirmCompleted(
             @Param("id") Integer id,
             @Param("collectorId") Integer collectorId,
+            @Param("time") LocalDateTime time);
+
+    @Modifying
+    @Query("""
+                UPDATE CollectionRequest cr
+                SET cr.status = 'completed',
+                    cr.completedAt = :time,
+                    cr.actualWeightKg = :actualWeightKg,
+                    cr.updatedAt = :time
+                WHERE cr.id = :id
+                  AND cr.collector.id = :collectorId
+                  AND cr.status = 'collected'
+            """)
+    int confirmCompletedWithWeight(
+            @Param("id") Integer id,
+            @Param("collectorId") Integer collectorId,
+            @Param("actualWeightKg") BigDecimal actualWeightKg,
             @Param("time") LocalDateTime time);
 }

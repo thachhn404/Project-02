@@ -179,8 +179,6 @@ CREATE TABLE collectors (
     vehicle_type NVARCHAR(50) NULL,
     vehicle_plate NVARCHAR(20) NULL,
     status NVARCHAR(20) NULL,
-    current_latitude DECIMAL(10,8) NULL,
-    current_longitude DECIMAL(11,8) NULL,
     last_location_update DATETIME2 NULL,
     violation_count INT NULL,
     created_at DATETIME2 NULL,

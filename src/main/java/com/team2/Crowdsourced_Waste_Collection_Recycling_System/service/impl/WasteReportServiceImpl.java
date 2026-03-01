@@ -383,7 +383,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                     .build();
         }
 
-        CollectorReport collectorReport = collectorReportRepository.findByCollectionRequestId(request.getId()).orElse(null);
+        CollectorReport collectorReport = collectorReportRepository.findTopByCollectionRequest_IdOrderByCreatedAtDesc(request.getId()).orElse(null);
         if (collectorReport == null) {
             return CitizenReportResultResponse.builder()
                     .reportId(report.getId())

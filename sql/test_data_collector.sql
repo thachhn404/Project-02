@@ -40,31 +40,31 @@ IF NOT EXISTS (SELECT 1 FROM collectors WHERE user_id = 101)
 BEGIN
     INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, 
                            vehicle_type, vehicle_plate, status, 
-                           current_latitude, current_longitude, last_location_update,
+                           last_location_update,
                            total_collections, successful_collections, total_weight_collected, created_at)
     VALUES
     -- Collector 1: AVAILABLE - Sẵn sàng nhận task mới
     (101, 1, 'collector1@example.com', N'Nguyễn Văn A', 'COL-001', 
      'TRUCK', '29A-12345', 'AVAILABLE',
-     10.77580000, 106.70550000, '2026-02-05 07:00:00',
+     '2026-02-05 07:00:00',
      50, 45, 1250.50, '2024-01-15 08:00:00'),
     
     -- Collector 2: ACTIVE - Đang có nhiệm vụ
     (102, 1, 'collector2@example.com', N'Trần Thị B', 'COL-002',
      'MOTORCYCLE', '29B-98765', 'ACTIVE',
-     10.78000000, 106.71000000, '2026-02-05 07:15:00',
+     '2026-02-05 07:15:00',
      15, 12, 320.75, '2024-03-20 09:00:00'),
     
     -- Collector 3: INACTIVE - Tạm nghỉ
     (103, 1, 'collector3@example.com', N'Lê Văn C', 'COL-003',
      'TRUCK', '29C-54321', 'INACTIVE',
-     10.76000000, 106.69000000, '2026-02-04 18:00:00',
+     '2026-02-04 18:00:00',
      100, 95, 2500.00, '2023-11-01 10:00:00'),
     
     -- Collector 4: SUSPEND - Bị tạm ngừng (vi phạm)
     (104, 1, 'collector4@example.com', N'Phạm Thị D', 'COL-004',
      'MOTORCYCLE', '29D-11111', 'SUSPEND',
-     10.75000000, 106.68000000, '2026-02-03 16:00:00',
+     '2026-02-03 16:00:00',
      30, 25, 680.00, '2024-06-10 09:00:00');
 END
 GO

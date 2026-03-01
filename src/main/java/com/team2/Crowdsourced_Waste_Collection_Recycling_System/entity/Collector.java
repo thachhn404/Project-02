@@ -17,7 +17,6 @@ import jakarta.persistence.OneToOne;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -58,12 +57,6 @@ public class Collector {
 
     @Column(name = "status", length = 20)
     private CollectorStatus status;
-
-    @Column(name = "current_latitude", precision = 10, scale = 8)
-    private BigDecimal currentLatitude;
-
-    @Column(name = "current_longitude", precision = 11, scale = 8)
-    private BigDecimal currentLongitude;
 
     @Column(name = "last_location_update")
     private LocalDateTime lastLocationUpdate;

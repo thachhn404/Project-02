@@ -76,8 +76,8 @@ SET IDENTITY_INSERT citizens OFF;
 SET IDENTITY_INSERT collectors ON;
 
 IF NOT EXISTS (SELECT 1 FROM collectors WHERE id = 1)
-INSERT INTO collectors (id, user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, current_latitude, current_longitude, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
-VALUES (1, 301, 1, 'collector@example.com', N'Nguyen Van Collector', 'COL-001', 'TRUCK', '59C-12345', 'AVAILABLE', 10.762622, 106.660172, GETDATE(), 10, 10, 500.50, GETDATE());
+INSERT INTO collectors (id, user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
+VALUES (1, 301, 1, 'collector@example.com', N'Nguyen Van Collector', 'COL-001', 'TRUCK', '59C-12345', 'AVAILABLE', GETDATE(), 10, 10, 500.50, GETDATE());
 
 SET IDENTITY_INSERT collectors OFF;
 

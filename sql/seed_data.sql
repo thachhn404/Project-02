@@ -208,16 +208,16 @@ DECLARE @collectorId1 INT, @collectorId2 INT;
 SELECT @collectorId1 = id FROM collectors WHERE user_id = @collectorUserId1;
 IF @collectorId1 IS NULL
 BEGIN
-    INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, current_latitude, current_longitude, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
-    VALUES (@collectorUserId1, @enterpriseId, 'collector1@demo.com', N'Collector 01', 'EMP-001', N'Xe tải nhỏ', '59C-10001', 'AVAILABLE', 10.77690000, 106.70090000, @now, 0, 0, 0.00, @now);
+    INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
+    VALUES (@collectorUserId1, @enterpriseId, 'collector1@demo.com', N'Collector 01', 'EMP-001', N'Xe tải nhỏ', '59C-10001', 'AVAILABLE', @now, 0, 0, 0.00, @now);
     SET @collectorId1 = SCOPE_IDENTITY();
 END
 
 SELECT @collectorId2 = id FROM collectors WHERE user_id = @collectorUserId2;
 IF @collectorId2 IS NULL
 BEGIN
-    INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, current_latitude, current_longitude, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
-    VALUES (@collectorUserId2, @enterpriseId, 'collector2@demo.com', N'Collector 02', 'EMP-002', N'Xe ba gác', '59C-10002', 'AVAILABLE', 10.77710000, 106.70110000, @now, 0, 0, 0.00, @now);
+    INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
+    VALUES (@collectorUserId2, @enterpriseId, 'collector2@demo.com', N'Collector 02', 'EMP-002', N'Xe ba gác', '59C-10002', 'AVAILABLE', @now, 0, 0, 0.00, @now);
     SET @collectorId2 = SCOPE_IDENTITY();
 END
 

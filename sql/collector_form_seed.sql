@@ -97,8 +97,8 @@ DECLARE @collectorId INT;
 SELECT @collectorId = id FROM collectors WHERE user_id = @collectorUserId;
 IF @collectorId IS NULL
 BEGIN
-    INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, current_latitude, current_longitude, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
-    VALUES (@collectorUserId, @enterpriseId, 'collector@seed.com', N'Collector Seed', 'EMP-SEED-001', N'Xe tải nhỏ', '59C-10001', 'AVAILABLE', 10.77690000, 106.70090000, @now, 0, 0, 0.00, @now);
+    INSERT INTO collectors (user_id, enterprise_id, email, full_name, employee_code, vehicle_type, vehicle_plate, status, last_location_update, total_collections, successful_collections, total_weight_collected, created_at)
+    VALUES (@collectorUserId, @enterpriseId, 'collector@seed.com', N'Collector Seed', 'EMP-SEED-001', N'Xe tải nhỏ', '59C-10001', 'AVAILABLE', @now, 0, 0, 0.00, @now);
     SET @collectorId = SCOPE_IDENTITY();
 END
 

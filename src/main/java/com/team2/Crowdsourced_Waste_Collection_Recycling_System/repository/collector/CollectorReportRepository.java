@@ -9,7 +9,13 @@ import java.util.Optional;
 
 @Repository
 public interface CollectorReportRepository extends JpaRepository<CollectorReport, Integer> {
-    Optional<CollectorReport> findByCollectionRequest_Id(Integer requestId);
-    Optional<CollectorReport> findByCollectionRequestId(Integer requestId);
+    boolean existsByCollectionRequest_Id(Integer requestId);
+    Optional<CollectorReport> findTopByCollectionRequest_IdOrderByCreatedAtDesc(Integer requestId);
+    default Optional<CollectorReport> findByCollectionRequest_Id(Integer requestId) {
+        return findTopByCollectionRequest_IdOrderByCreatedAtDesc(requestId);
+    }
+    default Optional<CollectorReport> findByCollectionRequestId(Integer requestId) {
+        return findTopByCollectionRequest_IdOrderByCreatedAtDesc(requestId);
+    }
     List<CollectorReport> findByCollector_Id(Integer collectorId);
 }
