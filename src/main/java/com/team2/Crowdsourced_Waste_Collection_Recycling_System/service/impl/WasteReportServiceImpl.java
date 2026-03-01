@@ -18,7 +18,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Was
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Citizen;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReport;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportItem;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteCategory;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
@@ -28,8 +27,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.AppExc
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.exception.ErrorCode;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.mapper.CitizenFeatureMapper;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportItemRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.feedback.FeedbackRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.profile.CitizenRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.reward.PointTransactionRepository;
@@ -37,6 +34,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteCategoryRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CloudinaryService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
 import lombok.RequiredArgsConstructor;
@@ -57,8 +55,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
 import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
@@ -92,9 +88,8 @@ public class WasteReportServiceImpl implements WasteReportService {
     private final ReportImageRepository reportImageRepository;
     private final CloudinaryService cloudinaryService;
     private final CollectionRequestRepository collectionRequestRepository;
-    private final CollectorReportRepository collectorReportRepository;
-    private final CollectorReportItemRepository collectorReportItemRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final CollectorReportRepository collectorReportRepository;
 
     private final FeedbackRepository feedbackRepository;
     private final CitizenFeatureMapper citizenFeatureMapper;
@@ -151,11 +146,12 @@ public class WasteReportServiceImpl implements WasteReportService {
 
         List<Integer> categoryIds = resolveCategoryIds(request.getCategoryIds());
         List<BigDecimal> quantities = request.getQuantities();
-        List<WasteCategory> categories = wasteCategoryRepository.findAllById(categoryIds);
-        if (categories.size() != categoryIds.size()) {
+        if (quantities == null || quantities.size() != categoryIds.size()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
-        if (quantities == null || quantities.size() != categoryIds.size()) {
+
+        List<WasteCategory> categories = wasteCategoryRepository.findAllById(categoryIds);
+        if (categories.size() != categoryIds.size()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
@@ -171,6 +167,7 @@ public class WasteReportServiceImpl implements WasteReportService {
             item.setReport(saved);
             item.setWasteCategory(category);
             item.setUnitSnapshot(category.getUnit());
+            item.setQuantity(quantities.get(i));
             item.setCreatedAt(now);
             reportItems.add(item);
         }
@@ -184,6 +181,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .reportCode(saved.getReportCode())
                 .status(mapCitizenStatus(saved.getStatus()))
                 .wasteType(saved.getWasteType())
+                .images(getImageUrls(saved.getId()))
                 .createdAt(saved.getCreatedAt())
                 .categories(categories.stream().map(this::toCategoryResponse).toList())
                 .build();
@@ -257,6 +255,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                 item.setReport(saved);
                 item.setWasteCategory(category);
                 item.setUnitSnapshot(category.getUnit());
+                item.setQuantity(quantities.get(i));
                 item.setCreatedAt(now);
                 reportItems.add(item);
             }
@@ -274,6 +273,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .reportCode(saved.getReportCode())
                 .status(mapCitizenStatus(saved.getStatus()))
                 .wasteType(saved.getWasteType())
+                .images(getImageUrls(saved.getId()))
                 .createdAt(saved.getCreatedAt())
                 .categories(getCategoriesForReport(saved.getId()))
                 .build();
@@ -315,7 +315,13 @@ public class WasteReportServiceImpl implements WasteReportService {
                 : wasteReportItemRepository.findWithCategoryByReportIdIn(reportIds).stream()
                 .collect(Collectors.groupingBy(
                         i -> i.getReport().getId(),
-                        Collectors.mapping(i -> toCategoryResponse(i.getWasteCategory()), Collectors.toList())
+                        Collectors.mapping(i -> WasteCategoryResponse.builder()
+                                .id(i.getWasteCategory().getId())
+                                .name(i.getWasteCategory().getName())
+                                .unit(i.getWasteCategory().getUnit() != null ? i.getWasteCategory().getUnit().name() : null)
+                                .pointPerUnit(i.getWasteCategory().getPointPerUnit())
+                                .quantity(i.getQuantity())
+                                .build(), Collectors.toList())
                 ));
 
         return reports.stream()
@@ -347,6 +353,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .reportCode(report.getReportCode())
                 .status(mapCitizenStatus(report.getStatus()))
                 .wasteType(report.getWasteType())
+                .images(getImageUrls(report.getId()))
                 .createdAt(report.getCreatedAt())
                 .categories(getCategoriesForReport(report.getId()))
                 .build();
@@ -388,16 +395,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                     .build();
         }
 
-        List<CollectorReportItem> items = collectorReportItemRepository.findByCollectorReportId(collectorReport.getId());
-        List<CitizenReportResultItemResponse> itemResponses = items.stream()
-                .map(i -> CitizenReportResultItemResponse.builder()
-                        .categoryId(i.getWasteCategory().getId())
-                        .categoryName(i.getWasteCategory().getName())
-                        .quantity(i.getQuantity())
-                        .unit(i.getUnitSnapshot() != null ? i.getUnitSnapshot().name() : null)
-                        .point(i.getTotalPoint())
-                        .build())
-                .toList();
+        List<CitizenReportResultItemResponse> itemResponses = List.of();
 
         Integer totalPoint = collectorReport.getTotalPoint() != null ? collectorReport.getTotalPoint() : 0;
         if (totalPoint == 0) {
@@ -524,10 +522,13 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     private List<WasteCategoryResponse> getCategoriesForReport(Integer reportId) {
         return wasteReportItemRepository.findWithCategoryByReportId(reportId).stream()
-                .map(WasteReportItem::getWasteCategory)
-                .filter(Objects::nonNull)
-                .map(this::toCategoryResponse)
-                .distinct()
+                .map(i -> WasteCategoryResponse.builder()
+                        .id(i.getWasteCategory().getId())
+                        .name(i.getWasteCategory().getName())
+                        .unit(i.getWasteCategory().getUnit() != null ? i.getWasteCategory().getUnit().name() : null)
+                        .pointPerUnit(i.getWasteCategory().getPointPerUnit())
+                        .quantity(i.getQuantity())
+                        .build())
                 .toList();
     }
 
@@ -540,11 +541,24 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .build();
     }
 
+    private List<String> getImageUrls(Integer reportId) {
+        return reportImageRepository.findByReport_Id(reportId).stream()
+                .map(ReportImage::getImageUrl)
+                .collect(Collectors.toList());
+    }
+
     private void validateCreateRequest(CreateWasteReportRequest request) {
         if (request == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         if (request.getImages() == null || request.getImages().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        if (request.getCategoryIds() == null || request.getCategoryIds().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        if (request.getQuantities() == null || request.getQuantities().isEmpty() ||
+                request.getQuantities().size() != resolveCategoryIds(request.getCategoryIds()).size()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         for (MultipartFile image : request.getImages()) {
@@ -565,20 +579,7 @@ public class WasteReportServiceImpl implements WasteReportService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         // Bỏ yêu cầu nhập wasteType: luôn cố định RECYCLABLE
-        if (request.getCategoryIds() == null || request.getCategoryIds().isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
-        if (request.getQuantities() == null || request.getQuantities().isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
-        if (request.getQuantities().size() != request.getCategoryIds().size()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
-        for (BigDecimal q : request.getQuantities()) {
-            if (q == null || q.signum() <= 0) {
-                throw new AppException(ErrorCode.INVALID_REQUEST);
-            }
-        }
+        
     }
 
     private void saveReportImages(WasteReport report, List<MultipartFile> images, LocalDateTime now) {

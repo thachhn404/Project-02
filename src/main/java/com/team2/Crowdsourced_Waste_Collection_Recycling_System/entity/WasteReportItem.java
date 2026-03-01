@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "waste_report_items")
@@ -42,6 +43,9 @@ public class WasteReportItem {
     @Enumerated(EnumType.STRING)
     @Column(name = "unit_snapshot", length = 20)
     private WasteUnit unitSnapshot;
+
+    @Column(name = "quantity", precision = 19, scale = 4)
+    private BigDecimal quantity;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

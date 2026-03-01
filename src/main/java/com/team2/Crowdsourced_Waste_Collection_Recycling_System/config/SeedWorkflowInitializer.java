@@ -30,7 +30,6 @@ public class SeedWorkflowInitializer {
             CollectionRequestRepository collectionRequestRepository,
             CollectionTrackingRepository collectionTrackingRepository,
             CollectorReportRepository collectorReportRepository,
-            CollectorReportImageRepository collectorReportImageRepository,
             PointRuleRepository pointRuleRepository,
             FeedbackRepository feedbackRepository
     ) {
@@ -76,7 +75,7 @@ public class SeedWorkflowInitializer {
             ensureTrackingIfMissing(collectionTrackingRepository, cr5, null, "collected",
                     now.minusDays(1).plusHours(5));
 
-            ensureCollectorReportIfMissing(collectorReportRepository, collectorReportImageRepository, cr5,
+            ensureCollectorReportIfMissing(collectorReportRepository, cr5,
                     now.minusDays(1).plusHours(5));
 
             ensureFeedback(feedbackRepository, citizen, cr5, now.minusDays(1).plusHours(6));
@@ -160,7 +159,6 @@ public class SeedWorkflowInitializer {
 
     private void ensureCollectorReportIfMissing(
             CollectorReportRepository reportRepository,
-            CollectorReportImageRepository imageRepository,
             CollectionRequest request,
             LocalDateTime collectedAt) {
         if (request == null || request.getId() == null) return;
@@ -173,13 +171,7 @@ public class SeedWorkflowInitializer {
         report.setLatitude(new BigDecimal("10.77653000"));
         report.setLongitude(new BigDecimal("106.70098000"));
         report.setCreatedAt(collectedAt);
-        CollectorReport saved = reportRepository.save(report);
-
-        CollectorReportImage img = new CollectorReportImage();
-        img.setCollectorReport(saved);
-        img.setImageUrl("https://example.com/collectorReports/" + saved.getId() + ".jpg");
-        img.setCreatedAt(collectedAt);
-        imageRepository.save(img);
+        reportRepository.save(report);
     }
 
     private void ensureFeedback(FeedbackRepository repo, Citizen citizen, CollectionRequest request,

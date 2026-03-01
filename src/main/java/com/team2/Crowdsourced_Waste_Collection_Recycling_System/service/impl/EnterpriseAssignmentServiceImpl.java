@@ -14,6 +14,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.colle
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseAssignmentService;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     private final CollectorRepository collectorRepository;
     private final CollectionTrackingRepository collectionTrackingRepository;
     private final WasteReportRepository wasteReportRepository;
+    private final EnterpriseRequestService enterpriseRequestService;
 
     @Override
     @Transactional
@@ -63,10 +65,6 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         }
 
         LocalDateTime now = LocalDateTime.now();
-        int hour = now.getHour();
-        if (hour < 7 || hour >= 17) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ phân công trong khung giờ 7h–17h");
-        }
         int updated = collectionRequestRepository.assignCollector(requestId, collectorId, enterpriseId);
         if (updated == 0) {
             CollectionRequest request = collectionRequestRepository.findById(requestId)
@@ -113,6 +111,41 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
                 .status("assigned")
                 .assignedAt(now)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public AssignCollectorResponse assignCollectorByReportCode(Integer enterpriseId, String reportCode, Integer collectorId) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+        if (reportCode == null || reportCode.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu report_code");
+        }
+        if (collectorId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu collector_id");
+        }
+        var collector = collectorRepository.findById(collectorId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collector không tồn tại"));
+        if (collector.getEnterprise() == null || collector.getEnterprise().getId() == null
+                || !collector.getEnterprise().getId().equals(enterpriseId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collector không thuộc doanh nghiệp");
+        }
+        if (collector.getStatus() == null
+                || (collector.getStatus() != CollectorStatus.ACTIVE
+                && collector.getStatus() != CollectorStatus.AVAILABLE)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collector không ở trạng thái active hoặc available");
+        }
+        var report = wasteReportRepository.findByReportCode(reportCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Waste Report không tồn tại"));
+        var existing = collectionRequestRepository.findByReport_Id(report.getId());
+        Integer reqId;
+        if (existing.isEmpty()) {
+            reqId = enterpriseRequestService.acceptWasteReport(enterpriseId, reportCode);
+        } else {
+            reqId = existing.get().getId();
+        }
+        return assignCollector(enterpriseId, reqId, collectorId);
     }
 
     @Override

@@ -21,6 +21,7 @@ public class WasteReportResponse {
     String reportCode;
     String status;
     String wasteType;
+    List<String> images;
     LocalDateTime createdAt;
     List<WasteCategoryResponse> categories;
 }

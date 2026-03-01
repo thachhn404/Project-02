@@ -20,7 +20,6 @@ public class EnterpriseResponse {
     String address;
     String phone;
     String email;
-    String supportedWasteTypeCodes;
     String serviceWards;
     String serviceCities;
     String status;

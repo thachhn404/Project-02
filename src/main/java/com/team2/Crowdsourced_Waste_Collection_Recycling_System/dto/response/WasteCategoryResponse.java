@@ -19,5 +19,6 @@ public class WasteCategoryResponse {
     String name;
     String unit;
     BigDecimal pointPerUnit;
+    BigDecimal quantity;
 }
 

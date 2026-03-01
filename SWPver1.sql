@@ -1,17 +1,17 @@
 USE master;
 GO
 
-IF EXISTS (SELECT 1 FROM sys.databases WHERE name = N'WasteManagementDB')
+IF EXISTS (SELECT 1 FROM sys.databases WHERE name = N'Waste')
 BEGIN
-    ALTER DATABASE WasteManagementDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE WasteManagementDB;
+    ALTER DATABASE Waste SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE Waste;
 END
 GO
 
-CREATE DATABASE WasteManagementDB;
+CREATE DATABASE Waste;
 GO
 
-USE WasteManagementDB;
+USE Waste;
 GO
 
 -- Roles
@@ -19,9 +19,6 @@ CREATE TABLE roles (
     id INT IDENTITY(1,1) NOT NULL,
     role_code NVARCHAR(20) NOT NULL,
     role_name NVARCHAR(50) NOT NULL,
-    description NVARCHAR(500) NULL,
-    is_active BIT NULL,
-    created_at DATETIME2 NULL,
     CONSTRAINT pk_roles PRIMARY KEY (id),
     CONSTRAINT uq_roles_role_code UNIQUE (role_code)
 );
@@ -56,18 +53,11 @@ CREATE TABLE enterprise (
     id INT IDENTITY(1,1) NOT NULL,
     name NVARCHAR(255) NOT NULL,
     address NVARCHAR(500) NULL,
-    ward NVARCHAR(100) NULL,
-    city NVARCHAR(100) NULL,
     phone NVARCHAR(20) NULL,
     email NVARCHAR(255) NULL,
-    license_number NVARCHAR(100) NULL,
-    tax_code NVARCHAR(50) NULL,
-    capacity_kg_per_day DECIMAL(12,2) NULL,
-    supported_waste_type_codes NVARCHAR(MAX) NULL,
     service_wards NVARCHAR(MAX) NULL,
     service_cities NVARCHAR(MAX) NULL,
     status NVARCHAR(20) NULL,
-    total_collected_weight DECIMAL(12,2) NULL,
     created_at DATETIME2 NULL,
     updated_at DATETIME2 NULL,
     CONSTRAINT pk_enterprise PRIMARY KEY (id)
@@ -81,11 +71,9 @@ CREATE TABLE users (
     password_hash NVARCHAR(255) NOT NULL,
     full_name NVARCHAR(255) NOT NULL,
     phone NVARCHAR(20) NULL,
-    avatar_url NVARCHAR(500) NULL,
     role_id INT NOT NULL,
     enterprise_id INT NULL,
     status NVARCHAR(20) NULL,
-    last_login DATETIME2 NULL,
     created_at DATETIME2 NULL,
     updated_at DATETIME2 NULL,
     CONSTRAINT pk_users PRIMARY KEY (id),
@@ -112,7 +100,7 @@ CREATE TABLE citizens (
     valid_reports INT NULL,
     CONSTRAINT pk_citizens PRIMARY KEY (id),
     CONSTRAINT uq_citizens_user_id UNIQUE (user_id),
-    CONSTRAINT fk_citizens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_citizens_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 GO
 
@@ -137,22 +125,23 @@ CREATE TABLE waste_reports (
     citizen_id INT NOT NULL,
     description NVARCHAR(1000) NULL,
     waste_type NVARCHAR(20) NOT NULL,
-    estimated_weight DECIMAL(10,2) NULL,
     latitude DECIMAL(10,8) NOT NULL,
     longitude DECIMAL(11,8) NOT NULL,
     address NVARCHAR(500) NULL,
     images NVARCHAR(MAX) NULL,
-    status NVARCHAR(20) NULL,
     cloudinary_public_id NVARCHAR(255) NULL,
+    status NVARCHAR(20) NULL,
     created_at DATETIME2 NULL,
     updated_at DATETIME2 NULL,
+    accepted_at DATETIME2 NULL,
+    rejection_reason NVARCHAR(500) NULL,
     CONSTRAINT pk_waste_reports PRIMARY KEY (id),
     CONSTRAINT uq_waste_reports_report_code UNIQUE (report_code),
     CONSTRAINT fk_waste_reports_citizen FOREIGN KEY (citizen_id) REFERENCES citizens(id)
 );
 GO
 
--- Waste Report Items (1 report -> many categories)
+-- Waste Report Items
 CREATE TABLE waste_report_items (
     id INT IDENTITY(1,1) NOT NULL,
     report_id INT NOT NULL,
@@ -193,13 +182,11 @@ CREATE TABLE collectors (
     current_latitude DECIMAL(10,8) NULL,
     current_longitude DECIMAL(11,8) NULL,
     last_location_update DATETIME2 NULL,
-    total_collections INT NULL,
-    successful_collections INT NULL,
-    total_weight_collected DECIMAL(12,2) NULL,
+    violation_count INT NULL,
     created_at DATETIME2 NULL,
     CONSTRAINT pk_collectors PRIMARY KEY (id),
     CONSTRAINT uq_collectors_user_id UNIQUE (user_id),
-    CONSTRAINT fk_collectors_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_collectors_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_collectors_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id)
 );
 GO
@@ -221,6 +208,7 @@ CREATE TABLE collection_requests (
     completed_at DATETIME2 NULL,
     created_at DATETIME2 NULL,
     updated_at DATETIME2 NULL,
+    sla_violated BIT NULL,
     CONSTRAINT pk_collection_requests PRIMARY KEY (id),
     CONSTRAINT uq_collection_requests_request_code UNIQUE (request_code),
     CONSTRAINT fk_collection_requests_report FOREIGN KEY (report_id) REFERENCES waste_reports(id),
@@ -238,7 +226,6 @@ CREATE TABLE collection_tracking (
     latitude DECIMAL(10,8) NULL,
     longitude DECIMAL(11,8) NULL,
     note NVARCHAR(500) NULL,
-    images NVARCHAR(MAX) NULL,
     created_at DATETIME2 NULL,
     CONSTRAINT pk_collection_tracking PRIMARY KEY (id),
     CONSTRAINT fk_collection_tracking_request FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id),
@@ -254,7 +241,6 @@ CREATE TABLE collector_reports (
     status NVARCHAR(20) NOT NULL,
     collector_note NVARCHAR(1000) NULL,
     total_point INT NULL,
-    actual_weight_recyclable DECIMAL(19,4) NULL,
     collected_at DATETIME2 NULL,
     latitude DECIMAL(10,8) NULL,
     longitude DECIMAL(11,8) NULL,
@@ -262,8 +248,7 @@ CREATE TABLE collector_reports (
     CONSTRAINT pk_collector_reports PRIMARY KEY (id),
     CONSTRAINT uq_collector_reports_code UNIQUE (report_code),
     CONSTRAINT fk_collector_reports_request FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id),
-    CONSTRAINT fk_collector_reports_collector FOREIGN KEY (collector_id) REFERENCES collectors(id),
-    CONSTRAINT ck_collector_reports_status CHECK (status IN (N'COMPLETED', N'FAILED'))
+    CONSTRAINT fk_collector_reports_collector FOREIGN KEY (collector_id) REFERENCES collectors(id)
 );
 GO
 
@@ -303,23 +288,14 @@ CREATE TABLE feedbacks (
     feedback_type NVARCHAR(20) NOT NULL,
     subject NVARCHAR(255) NOT NULL,
     content NVARCHAR(MAX) NOT NULL,
-    images NVARCHAR(MAX) NULL,
     severity NVARCHAR(20) NULL,
     status NVARCHAR(20) NULL,
-    assigned_to INT NULL,
-    assigned_at DATETIME2 NULL,
-    resolution NVARCHAR(MAX) NULL,
-    resolved_by INT NULL,
-    resolved_at DATETIME2 NULL,
-    responses NVARCHAR(MAX) NULL,
     created_at DATETIME2 NULL,
     updated_at DATETIME2 NULL,
     CONSTRAINT pk_feedbacks PRIMARY KEY (id),
     CONSTRAINT uq_feedbacks_feedback_code UNIQUE (feedback_code),
     CONSTRAINT fk_feedbacks_citizen FOREIGN KEY (citizen_id) REFERENCES citizens(id),
-    CONSTRAINT fk_feedbacks_collection_request FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id),
-    CONSTRAINT fk_feedbacks_assigned_to FOREIGN KEY (assigned_to) REFERENCES users(id),
-    CONSTRAINT fk_feedbacks_resolved_by FOREIGN KEY (resolved_by) REFERENCES users(id)
+    CONSTRAINT fk_feedbacks_collection_request FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id)
 );
 GO
 

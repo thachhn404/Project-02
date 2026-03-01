@@ -43,10 +43,6 @@ public class Enterprise {
     private String email;
 
     @Lob
-    @Column(name = "supported_waste_type_codes", columnDefinition = "NVARCHAR(MAX)")
-    private String supportedWasteTypeCodes;
-
-    @Lob
     @Column(name = "service_wards", columnDefinition = "NVARCHAR(MAX)")
     private String serviceWards;
 

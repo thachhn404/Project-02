@@ -1,6 +1,7 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.collector;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateCollectorReportRequest;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CollectorReportItemRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectTaskRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.UpdateTaskStatusRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.*;
@@ -205,6 +206,35 @@ public class CollectionController {
             @RequestPart("images") @NotNull @Size(min = 1) List<MultipartFile> images) {
         Integer collectorId = extractCollectorId(jwt);
         request.setCollectionRequestId(requestId);
+        CollectorReportResponse response = collectorReportService.createCollectorReport(request, images, collectorId);
+        return ApiResponse.<CollectorReportResponse>builder()
+                .result(response)
+                .build();
+    }
+
+    /**
+     * Biến thể cho phép gửi "các trường bình thường" qua form-data (@ModelAttribute),
+     * tương tự Citizen. Dữ liệu danh mục và số lượng đi theo mảng.
+     */
+    @PostMapping(value = "/{requestId}/complete-form", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Hoàn tất thu gom (form)", description = "Gửi báo cáo bằng các trường form-data thông thường")
+    public ApiResponse<CollectorReportResponse> completeTaskForm(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer requestId,
+            @Valid @ModelAttribute com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateCollectorReportFormRequest form,
+            @RequestPart("images") @NotNull @Size(min = 1) List<MultipartFile> images) {
+        Integer collectorId = extractCollectorId(jwt);
+        CreateCollectorReportRequest request = CreateCollectorReportRequest.builder()
+                .collectionRequestId(requestId)
+                .collectorNote(form.getCollectorNote())
+                .address(form.getAddress())
+                .latitude(form.getLatitude())
+                .longitude(form.getLongitude())
+                .actualWeightKg(form.getActualWeightKg())
+                .items(form.getItems())
+                .build();
+
         CollectorReportResponse response = collectorReportService.createCollectorReport(request, images, collectorId);
         return ApiResponse.<CollectorReportResponse>builder()
                 .result(response)

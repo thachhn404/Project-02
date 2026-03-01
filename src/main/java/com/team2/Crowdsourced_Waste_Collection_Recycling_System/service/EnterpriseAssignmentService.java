@@ -9,6 +9,8 @@ import java.util.List;
 public interface EnterpriseAssignmentService {
     AssignCollectorResponse assignCollector(Integer enterpriseId, Integer requestId, Integer collectorId);
 
+    AssignCollectorResponse assignCollectorByReportCode(Integer enterpriseId, String reportCode, Integer collectorId);
+
     List<EligibleCollectorResponse> findEligibleCollectors(Integer enterpriseId, Integer requestId, Double radiusKm);
 
     RequestPreviewResponse getRequestPreview(Integer enterpriseId, Integer requestId);

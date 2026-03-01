@@ -9,6 +9,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.Collection
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionTracking;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionTrackingRepository;
@@ -181,6 +182,27 @@ public class CollectorServiceImpl implements CollectorService {
         }
         updateWasteReportStatusIfPresent(requestId, WasteReportStatus.COLLECTED, now);
         logTracking(requestId, collectorId, "collected", "Collector completed task");
+    }
+
+    @Override
+    @Transactional
+    public void updateAvailabilityStatus(Integer collectorId, String statusStr) {
+        if (statusStr == null || statusStr.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status is required");
+        }
+        CollectorStatus status;
+        try {
+            status = CollectorStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
+        }
+        if (status == CollectorStatus.SUSPEND) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to set suspend");
+        }
+        Collector collector = collectorRepository.findById(collectorId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collector not found"));
+        collector.setStatus(status);
+        collectorRepository.save(collector);
     }
 
     private void updateWasteReportStatusIfPresent(Integer requestId, WasteReportStatus newStatus, LocalDateTime now) {

@@ -66,6 +66,19 @@ public class EnterpriseController {
         return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
     }
 
+    @PostMapping("/reports/{reportCode}/assign-collector")
+    @PreAuthorize("hasRole('ENTERPRISE')")
+    @Operation(summary = "Gán Collector theo reportCode (1 bước)", description = "Nếu chưa có CollectionRequest thì tự tạo (ACCEPTED_ENTERPRISE), sau đó gán thành ASSIGNED")
+    public ApiResponse<AssignCollectorResponse> assignCollectorByReportCode(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String reportCode,
+            @RequestBody AssignCollectorRequest request) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        AssignCollectorResponse result = enterpriseAssignmentService.assignCollectorByReportCode(enterpriseId, reportCode,
+                request.getCollectorId());
+        return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
+    }
+
     @GetMapping("/{requestId}/eligible-collectors")
     @PreAuthorize("hasRole('ENTERPRISE')")
     @Operation(summary = "Liệt kê Collector đủ điều kiện", description = "Lọc theo bán kính ≤10km (mặc định), online và trạng thái ACTIVE/AVAILABLE")
@@ -101,12 +114,12 @@ public class EnterpriseController {
             @RequestBody(required = false) AcceptWasteReportRequest body) {
         Integer enterpriseId = extractEnterpriseId(jwt);
         Integer collectionRequestId = enterpriseRequestService.acceptWasteReport(
-                enterpriseId, reportCode, body != null ? body.getEstimatedWeight() : null);
+                enterpriseId, reportCode);
 
         return ApiResponse.<CollectionRequestActionResponse>builder()
                 .result(CollectionRequestActionResponse.builder()
                         .collectionRequestId(collectionRequestId)
-                        .status("pending")
+                        .status("accepted")
                         .actionAt(LocalDateTime.now())
                         .build())
                 .build();

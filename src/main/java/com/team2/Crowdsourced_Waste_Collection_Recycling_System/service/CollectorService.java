@@ -52,4 +52,6 @@ public interface CollectorService {
      * Lưu ý: nếu cần upload ảnh + tạo report, dùng CollectorReportService.
      */
     void completeTask(Integer requestId, Integer collectorId);
+
+    void updateAvailabilityStatus(Integer collectorId, String status);
 }

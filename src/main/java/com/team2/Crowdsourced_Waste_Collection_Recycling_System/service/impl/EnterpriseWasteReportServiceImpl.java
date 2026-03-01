@@ -37,7 +37,6 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
         List<WasteReport> pendingReports = wasteReportRepository.findByStatus(WasteReportStatus.PENDING);
 
         return pendingReports.stream()
-                .filter(report -> isSupportedWasteType(enterprise, report.getWasteType()))
                 .filter(report -> isInServiceArea(enterprise, report))
                 .map(this::toResponse)
                 .toList();
@@ -58,30 +57,10 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
                 .build();
     }
 
-    private boolean isSupportedWasteType(Enterprise enterprise, String wasteType) {
-        if (wasteType == null || wasteType.isBlank()) {
-            return false;
-        }
-        String codes = enterprise.getSupportedWasteTypeCodes();
-        if (codes == null || codes.isBlank()) {
-            return false;
-        }
-        String target = wasteType.trim().toUpperCase();
-        return Arrays.stream(codes.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(String::toUpperCase)
-                .anyMatch(code -> code.equals(target));
-    }
-
     @Override
     @Transactional
     public void acceptReport(Integer enterpriseId, Integer reportId) {
-        Enterprise enterprise = validateEnterprise(enterpriseId);
         WasteReport report = validateReport(reportId);
-
-        validateProcessingEligibility(enterprise, report);
-
         report.setStatus(WasteReportStatus.ACCEPTED_ENTERPRISE);
         report.setAcceptedAt(LocalDateTime.now());
         
@@ -91,18 +70,7 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
     @Override
     @Transactional
     public void rejectReport(Integer enterpriseId, Integer reportId, String reason) {
-        Enterprise enterprise = validateEnterprise(enterpriseId);
         WasteReport report = validateReport(reportId);
-
-        // Enterprise vẫn có thể reject nếu không đủ điều kiện xử lý, nhưng ở đây ta giả sử họ reject vì lý do khác
-        // Tuy nhiên, nếu họ không support loại rác này, họ không nên thấy nó để reject.
-        // Nhưng logic nghiệp vụ cho phép reject, nên ta cứ để.
-        
-        // Check nếu report đã bị ai đó xử lý
-        if (report.getStatus() != WasteReportStatus.PENDING) {
-             throw new ResponseStatusException(HttpStatus.CONFLICT, "Báo cáo này đã được xử lý hoặc không còn ở trạng thái chờ");
-        }
-
         report.setStatus(WasteReportStatus.REJECTED);
         report.setRejectionReason(reason);
         
@@ -136,6 +104,11 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
         if (!isInServiceArea(enterprise, report)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Báo cáo nằm ngoài khu vực hoạt động của Enterprise");
         }
+    }
+
+    private boolean isSupportedWasteType(Enterprise enterprise, String wasteType) {
+        // TODO: Implement check for supported waste types
+        return true;
     }
 
     private boolean isInServiceArea(Enterprise enterprise, WasteReport report) {

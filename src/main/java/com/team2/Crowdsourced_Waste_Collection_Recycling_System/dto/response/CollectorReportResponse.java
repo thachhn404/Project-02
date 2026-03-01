@@ -1,8 +1,10 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,33 +14,19 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class CollectorReportResponse {
-    Integer reportId;
-
-    String reportCode;
-
-    Integer collectionRequestId;
-
-    Integer collectorId;
-
-    String collectorName;
-
-    CollectorReportStatus status;
-
-    String collectorNote;
-
-    Integer totalPoint;
-
-    BigDecimal latitude;
-
-    BigDecimal longitude;
-
-    LocalDateTime collectedAt;
-
-    LocalDateTime createdAt;
-
-    List<String> imageUrls;
-
-    List<CollectorReportItemResponse> items;
+    private Integer id;
+    private String reportCode;
+    private Integer collectionRequestId;
+    private Integer collectorId;
+    private CollectorReportStatus status;
+    private String collectorNote;
+    private Integer totalPoint;
+    private LocalDateTime collectedAt;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+    private LocalDateTime createdAt;
+    private List<String> imageUrls;
+    // You might want to include items here as well if needed
+    // private List<CollectorReportItemResponse> items; 
 }

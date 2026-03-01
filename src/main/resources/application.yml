@@ -21,6 +21,14 @@ spring:
 server:
   port: 8080
 
+workrule:
+  accept-timeout-hours: 4
+  sla-hours: 72
+  suspend-threshold: 3
+  working-start-hour: 7
+  working-end-hour: 17
+  reassign-radius-km: 10.0
+
 jwt:
   signerKey: "72d6236b1a543277ad6973b2693a14ab13c437f8749b185a301f5034bbe3de36"
   valid-duration: 3600 # 1 hour in seconds

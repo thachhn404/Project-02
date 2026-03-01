@@ -1,7 +1,5 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.DecimalMin;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,13 +7,13 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import jakarta.validation.constraints.DecimalMin;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateCollectorReportRequest {
-    private Integer collectionRequestId;
+public class CreateCollectorReportFormRequest {
     private String collectorNote;
     private String address;
     private Double latitude;

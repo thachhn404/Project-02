@@ -5,6 +5,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Api
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CreateCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.VehicleType;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
@@ -89,11 +90,19 @@ public class EnterpriseCollectorController {
         collector.setEmail(savedUser.getEmail());
         collector.setFullName(savedUser.getFullName());
         collector.setEmployeeCode(request.getEmployeeCode());
-        collector.setVehicleType(request.getVehicleType());
+        if (request.getVehicleType() != null && !request.getVehicleType().isBlank()) {
+            VehicleType vt = VehicleType.fromString(request.getVehicleType());
+            if (vt == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "vehicleType không hợp lệ (CAR|TRUCK|MOTORBIKE)");
+            }
+            collector.setVehicleType(vt.name());
+        }
         collector.setVehiclePlate(request.getVehiclePlate());
         collector.setStatus(CollectorStatus.AVAILABLE);
         collector.setCreatedAt(LocalDateTime.now());
         Collector savedCollector = collectorRepository.save(collector);
+        savedCollector.setEmployeeCode(String.format("C%03d", savedCollector.getId()));
+        savedCollector = collectorRepository.save(savedCollector);
 
         return ApiResponse.<CreateCollectorResponse>builder()
                 .result(CreateCollectorResponse.builder()

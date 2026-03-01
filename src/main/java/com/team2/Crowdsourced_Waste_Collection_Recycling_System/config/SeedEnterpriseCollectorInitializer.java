@@ -49,7 +49,6 @@ public class SeedEnterpriseCollectorInitializer {
             enterprise.setName("Test Enterprise");
             enterprise.setEmail(email);
             enterprise.setStatus("active");
-            enterprise.setSupportedWasteTypeCodes("PLASTIC,PAPER,RECYCLABLE");
             enterprise.setServiceWards("Ward 1,Ward 2");
             enterprise.setServiceCities("City A");
             enterprise.setCreatedAt(LocalDateTime.now());
@@ -61,10 +60,6 @@ public class SeedEnterpriseCollectorInitializer {
     private void ensureEnterpriseSeedFields(EnterpriseRepository enterpriseRepository, Enterprise enterprise) {
         if (enterprise == null || enterprise.getId() == null) return;
         boolean changed = false;
-        if (enterprise.getSupportedWasteTypeCodes() == null || enterprise.getSupportedWasteTypeCodes().isBlank()) {
-            enterprise.setSupportedWasteTypeCodes("PLASTIC,PAPER,RECYCLABLE");
-            changed = true;
-        }
         if (enterprise.getServiceWards() == null || enterprise.getServiceWards().isBlank()) {
             enterprise.setServiceWards("Ward 1,Ward 2");
             changed = true;

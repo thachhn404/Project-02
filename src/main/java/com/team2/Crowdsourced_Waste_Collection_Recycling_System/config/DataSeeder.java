@@ -7,7 +7,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReport;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Feedback;
@@ -29,7 +28,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionTrackingRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportImageRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.enterprise.EnterpriseRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authentication.PermissionRepository;
@@ -65,7 +63,6 @@ public class DataSeeder {
             CollectionRequestRepository collectionRequestRepository,
             CollectionTrackingRepository collectionTrackingRepository,
             CollectorReportRepository collectorReportRepository,
-            CollectorReportImageRepository collectorReportImageRepository,
             PermissionRepository permissionRepository,
             RolePermissionRepository rolePermissionRepository,
             PointRuleRepository pointRuleRepository,
@@ -150,7 +147,6 @@ public class DataSeeder {
                     collectionRequestRepository,
                     collectionTrackingRepository,
                     collectorReportRepository,
-                    collectorReportImageRepository,
                     pointRuleRepository,
                     pointTransactionRepository,
                     feedbackRepository);
@@ -314,7 +310,6 @@ public class DataSeeder {
             CollectionRequestRepository collectionRequestRepository,
             CollectionTrackingRepository collectionTrackingRepository,
             CollectorReportRepository collectorReportRepository,
-            CollectorReportImageRepository collectorReportImageRepository,
             PointRuleRepository pointRuleRepository,
             PointTransactionRepository pointTransactionRepository,
             FeedbackRepository feedbackRepository) {
@@ -377,7 +372,7 @@ public class DataSeeder {
         ensureTrackingIfMissing(collectionTrackingRepository, cr5, collector2, "collected",
                 now.minusDays(1).plusHours(5));
 
-        ensureCollectorReportIfMissing(collectorReportRepository, collectorReportImageRepository, cr5, collector2,
+        ensureCollectorReportIfMissing(collectorReportRepository, cr5, collector2,
                 now.minusDays(1).plusHours(5));
 
         PointRule rule = ensurePointRule(pointRuleRepository, enterprise, now.minusDays(30));
@@ -474,7 +469,6 @@ public class DataSeeder {
 
     private void ensureCollectorReportIfMissing(
             CollectorReportRepository reportRepository,
-            CollectorReportImageRepository imageRepository,
             CollectionRequest request,
             Collector collector,
             LocalDateTime collectedAt) {
@@ -493,13 +487,7 @@ public class DataSeeder {
         report.setLatitude(new BigDecimal("10.77653000"));
         report.setLongitude(new BigDecimal("106.70098000"));
         report.setCreatedAt(collectedAt);
-        CollectorReport saved = reportRepository.save(report);
-
-        CollectorReportImage img = new CollectorReportImage();
-        img.setCollectorReport(saved);
-        img.setImageUrl("https://example.com/collectorReports/" + saved.getId() + ".jpg");
-        img.setCreatedAt(collectedAt);
-        imageRepository.save(img);
+        reportRepository.save(report);
     }
 
     private PointRule ensurePointRule(PointRuleRepository repo, Enterprise enterprise, LocalDateTime createdAt) {

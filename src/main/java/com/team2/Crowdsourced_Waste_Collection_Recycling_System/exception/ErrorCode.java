@@ -29,6 +29,9 @@ public enum ErrorCode {
     ENTERPRISE_REQUIRED_FOR_COLLECTOR(1019, "Enterprise ID is required when creating a COLLECTOR account",
             HttpStatus.BAD_REQUEST),
     USER_SUSPENDED(1020, "Your account has been suspended", HttpStatus.FORBIDDEN),
+    COLLECTION_REQUEST_NOT_FOUND(1021, "Collection request not found", HttpStatus.NOT_FOUND),
+    COLLECTOR_NOT_FOUND(1022, "Collector not found", HttpStatus.NOT_FOUND),
+    LOCATION_TOO_FAR(1023, "Location is too far from report location", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
