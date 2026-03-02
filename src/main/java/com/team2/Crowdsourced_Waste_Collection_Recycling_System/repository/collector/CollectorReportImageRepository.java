@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface CollectorReportImageRepository extends JpaRepository<CollectorReportImage, Integer> {
     List<CollectorReportImage> findByCollectorReport_Id(Integer collectorReportId);
+
+    List<CollectorReportImage> findByCollectorReport_IdIn(List<Integer> collectorReportIds);
 }

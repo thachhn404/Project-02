@@ -18,4 +18,6 @@ public interface CollectorReportRepository extends JpaRepository<CollectorReport
         return findTopByCollectionRequest_IdOrderByCreatedAtDesc(requestId);
     }
     List<CollectorReport> findByCollector_Id(Integer collectorId);
+
+    List<CollectorReport> findByCollectionRequest_Enterprise_IdOrderByCreatedAtDesc(Integer enterpriseId);
 }

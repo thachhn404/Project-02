@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class EnterpriseRequestReportDetailResponse {
+public classEnterpriseRequestReportDetailResponse {
     Integer requestId;
     String requestCode;
     String requestStatus;
