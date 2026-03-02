@@ -1,10 +1,15 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseWasteReportResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteCategoryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReportItem;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.enterprise.EnterpriseRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.ReportImageRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseWasteReportService;
 import org.springframework.data.domain.Sort;
@@ -15,7 +20,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +32,31 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
 
     private final WasteReportRepository wasteReportRepository;
     private final EnterpriseRepository enterpriseRepository;
+    private final ReportImageRepository reportImageRepository;
+    private final WasteReportItemRepository wasteReportItemRepository;
+
+    @Override
+    public List<EnterpriseWasteReportResponse> getReports(Integer enterpriseId, String status) {
+        Enterprise enterprise = validateEnterprise(enterpriseId);
+
+        WasteReportStatus statusFilter = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusFilter = WasteReportStatus.valueOf(status.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status không hợp lệ");
+            }
+        }
+
+        List<WasteReport> reports = wasteReportRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        WasteReportStatus finalStatusFilter = statusFilter;
+        return reports.stream()
+                .filter(report -> finalStatusFilter == null || report.getStatus() == finalStatusFilter)
+                .filter(report -> isInServiceArea(enterprise, report))
+                .map(this::toResponse)
+                .toList();
+    }
 
     @Override
     public List<EnterpriseWasteReportResponse> getReports(Integer enterpriseId, String status) {
@@ -67,6 +99,14 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
     }
 
     private EnterpriseWasteReportResponse toResponse(WasteReport report) {
+        List<String> imageUrls = reportImageRepository.findByReport_Id(report.getId()).stream()
+                .map(ReportImage::getImageUrl)
+                .toList();
+
+        List<WasteCategoryResponse> categories = toWasteCategoryResponses(
+                wasteReportItemRepository.findWithCategoryByReportId(report.getId())
+        );
+
         return EnterpriseWasteReportResponse.builder()
                 .id(report.getId())
                 .reportCode(report.getReportCode())
@@ -77,8 +117,38 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
                 .latitude(report.getLatitude())
                 .longitude(report.getLongitude())
                 .images(report.getImages())
+                .imageUrls(imageUrls)
+                .categories(categories)
                 .createdAt(report.getCreatedAt())
                 .build();
+    }
+
+    private List<WasteCategoryResponse> toWasteCategoryResponses(List<WasteReportItem> items) {
+        Map<Integer, WasteCategoryResponse> byCategoryId = new LinkedHashMap<>();
+        for (WasteReportItem item : items) {
+            if (item.getWasteCategory() == null || item.getWasteCategory().getId() == null) {
+                continue;
+            }
+            Integer categoryId = item.getWasteCategory().getId();
+            WasteCategoryResponse existing = byCategoryId.get(categoryId);
+            if (existing == null) {
+                byCategoryId.put(categoryId, WasteCategoryResponse.builder()
+                        .id(categoryId)
+                        .name(item.getWasteCategory().getName())
+                        .unit(item.getUnitSnapshot() != null ? item.getUnitSnapshot().name()
+                                : (item.getWasteCategory().getUnit() != null ? item.getWasteCategory().getUnit().name() : null))
+                        .pointPerUnit(item.getWasteCategory().getPointPerUnit())
+                        .quantity(item.getQuantity())
+                        .build());
+            } else {
+                if (existing.getQuantity() == null) {
+                    existing.setQuantity(item.getQuantity());
+                } else if (item.getQuantity() != null) {
+                    existing.setQuantity(existing.getQuantity().add(item.getQuantity()));
+                }
+            }
+        }
+        return List.copyOf(byCategoryId.values());
     }
 
     @Override
