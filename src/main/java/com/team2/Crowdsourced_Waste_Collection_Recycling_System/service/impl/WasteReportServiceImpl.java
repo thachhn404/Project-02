@@ -38,6 +38,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.colle
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CloudinaryService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.WasteReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.interceptor.CacheAspectSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -625,7 +626,8 @@ public class WasteReportServiceImpl implements WasteReportService {
         return switch (status) {
             case PENDING -> "PENDING";
             case ACCEPTED_ENTERPRISE -> "ACCEPTED";
-            case ASSIGNED, ACCEPTED_COLLECTOR, ON_THE_WAY -> "ASSIGNED";
+            case ASSIGNED, ACCEPTED_COLLECTOR -> "ASSIGNED";
+            case ON_THE_WAY -> "ON THE WAY";
             case COLLECTED -> "COLLECTED";
             case REJECTED -> "REJECTED";
             case TIMED_OUT -> "TIMED_OUT";
