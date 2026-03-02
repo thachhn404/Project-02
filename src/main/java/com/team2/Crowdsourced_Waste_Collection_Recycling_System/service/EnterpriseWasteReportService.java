@@ -7,6 +7,8 @@ import java.util.List;
 public interface EnterpriseWasteReportService {
     List<EnterpriseWasteReportResponse> getPendingReports(Integer enterpriseId);
 
+    EnterpriseWasteReportResponse getReportById(Integer enterpriseId, Integer reportId);
+
     void acceptReport(Integer enterpriseId, Integer reportId);
 
     void rejectReport(Integer enterpriseId, Integer reportId, String reason);

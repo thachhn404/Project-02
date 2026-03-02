@@ -99,7 +99,7 @@ public class CitizenController {
     }
 
     @GetMapping("/reports/{id}")
-    @PreAuthorize("hasRole('CITIZEN')")
+    @PreAuthorize("hasAnyRole('CITIZEN','ENTERPRISE')")
     @Operation(summary = "Chi tiết báo cáo của tôi", description = "Lấy chi tiết báo cáo theo ID")
     public ResponseEntity<ApiResponse<WasteReportResponse>> getMyReportById(@PathVariable("id") Integer id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -58,6 +58,18 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
     }
 
     @Override
+    public EnterpriseWasteReportResponse getReportById(Integer enterpriseId, Integer reportId) {
+        Enterprise enterprise = validateEnterprise(enterpriseId);
+        WasteReport report = validateReport(reportId);
+
+        if (!isInServiceArea(enterprise, report)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Báo cáo không tồn tại");
+        }
+
+        return toResponse(report);
+    }
+
+    @Override
     @Transactional
     public void acceptReport(Integer enterpriseId, Integer reportId) {
         WasteReport report = validateReport(reportId);

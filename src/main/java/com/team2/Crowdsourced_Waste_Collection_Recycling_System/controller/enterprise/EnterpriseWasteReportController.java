@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,6 +35,20 @@ public class EnterpriseWasteReportController {
         return ResponseEntity.ok(ApiResponse.<List<EnterpriseWasteReportResponse>>builder()
                 .result(result)
                 .message("Lấy danh sách báo cáo PENDING phù hợp thành công")
+                .build());
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
+    public ResponseEntity<ApiResponse<EnterpriseWasteReportResponse>> getReportById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") Integer id) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        EnterpriseWasteReportResponse result = enterpriseWasteReportService.getReportById(enterpriseId, id);
+
+        return ResponseEntity.ok(ApiResponse.<EnterpriseWasteReportResponse>builder()
+                .result(result)
+                .message("Lấy chi tiết báo cáo thành công")
                 .build());
     }
 

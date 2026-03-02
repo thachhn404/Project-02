@@ -5,12 +5,14 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.Acce
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AssignCollectorResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseRequestReportDetailResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EligibleCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.RequestPreviewResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectionRequestActionResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseAssignmentService;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseReportDetailService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +40,7 @@ public class EnterpriseController {
     private final CollectionRequestRepository collectionRequestRepository;
     private final EnterpriseAssignmentService enterpriseAssignmentService;
     private final EnterpriseRequestService enterpriseRequestService;
+    private final EnterpriseReportDetailService enterpriseReportDetailService;
 
     /**
      * Xem tất cả yêu cầu thu gom thuộc về doanh nghiệp này.
@@ -100,6 +103,17 @@ public class EnterpriseController {
         Integer enterpriseId = extractEnterpriseId(jwt);
         RequestPreviewResponse result = enterpriseAssignmentService.getRequestPreview(enterpriseId, requestId);
         return ApiResponse.<RequestPreviewResponse>builder().result(result).build();
+    }
+
+    @GetMapping("/{requestId}/report-detail")
+    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
+    @Operation(summary = "Chi tiết báo cáo theo request", description = "Gồm waste report và collector report (nếu đã tạo)")
+    public ApiResponse<EnterpriseRequestReportDetailResponse> getRequestReportDetail(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer requestId) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        EnterpriseRequestReportDetailResponse result = enterpriseReportDetailService.getRequestReportDetail(enterpriseId, requestId);
+        return ApiResponse.<EnterpriseRequestReportDetailResponse>builder().result(result).build();
     }
 
     /**
