@@ -59,29 +59,6 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
     }
 
     @Override
-    public List<EnterpriseWasteReportResponse> getReports(Integer enterpriseId, String status) {
-        Enterprise enterprise = validateEnterprise(enterpriseId);
-
-        WasteReportStatus statusFilter = null;
-        if (status != null && !status.isBlank()) {
-            try {
-                statusFilter = WasteReportStatus.valueOf(status.trim().toUpperCase());
-            } catch (IllegalArgumentException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status không hợp lệ");
-            }
-        }
-
-        List<WasteReport> reports = wasteReportRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        WasteReportStatus finalStatusFilter = statusFilter;
-        return reports.stream()
-                .filter(report -> finalStatusFilter == null || report.getStatus() == finalStatusFilter)
-                .filter(report -> isInServiceArea(enterprise, report))
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Override
     public List<EnterpriseWasteReportResponse> getPendingReports(Integer enterpriseId) {
         if (enterpriseId == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
