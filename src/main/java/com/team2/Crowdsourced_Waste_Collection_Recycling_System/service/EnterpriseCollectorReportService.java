@@ -5,5 +5,5 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.Col
 import java.util.List;
 
 public interface EnterpriseCollectorReportService {
-    List<CollectorReportResponse> getCollectorReports(Integer enterpriseId, String status);
+    List<CollectorReportResponse> getCollectorReports(Integer enterpriseId);
 }

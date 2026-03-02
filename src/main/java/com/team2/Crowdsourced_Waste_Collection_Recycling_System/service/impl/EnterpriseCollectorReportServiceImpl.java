@@ -6,7 +6,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportItem;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportImageRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
@@ -33,27 +32,11 @@ public class EnterpriseCollectorReportServiceImpl implements EnterpriseCollector
     private final EnterpriseRepository enterpriseRepository;
 
     @Override
-    public List<CollectorReportResponse> getCollectorReports(Integer enterpriseId, String status) {
+    public List<CollectorReportResponse> getCollectorReports(Integer enterpriseId) {
         validateEnterprise(enterpriseId);
-
-        CollectorReportStatus statusFilter = null;
-        if (status != null && !status.isBlank()) {
-            try {
-                statusFilter = CollectorReportStatus.valueOf(status.trim().toUpperCase());
-            } catch (IllegalArgumentException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status không hợp lệ");
-            }
-        }
 
         List<CollectorReport> reports = collectorReportRepository
                 .findByCollectionRequest_Enterprise_IdOrderByCreatedAtDesc(enterpriseId);
-
-        if (statusFilter != null) {
-            CollectorReportStatus finalStatusFilter = statusFilter;
-            reports = reports.stream()
-                    .filter(r -> r.getStatus() == finalStatusFilter)
-                    .toList();
-        }
 
         List<Integer> reportIds = reports.stream()
                 .map(CollectorReport::getId)
