@@ -19,6 +19,8 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     List<PointTransaction> findByCollectionRequestId(Integer collectionRequestId);
     
     List<PointTransaction> findByReportId(Integer reportId);
+    boolean existsByCollectionRequestId(Integer collectionRequestId);
+    boolean existsByReportId(Integer reportId);
     
     @Query("SELECT pt FROM PointTransaction pt WHERE pt.citizen.id = :citizenId ORDER BY pt.createdAt DESC")
     List<PointTransaction> findByCitizenIdOrderByCreatedAtDesc(@Param("citizenId") Integer citizenId);

@@ -1,21 +1,23 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorReportResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteCategoryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReport;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportImage;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportItem;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportImageRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.enterprise.EnterpriseRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseCollectorReportService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,37 +28,15 @@ public class EnterpriseCollectorReportServiceImpl implements EnterpriseCollector
 
     private final CollectorReportRepository collectorReportRepository;
     private final CollectorReportImageRepository collectorReportImageRepository;
+    private final CollectorReportItemRepository collectorReportItemRepository;
     private final EnterpriseRepository enterpriseRepository;
 
     @Override
-    public List<CollectorReportResponse> getCollectorReports(Integer enterpriseId, String status) {
-        if (enterpriseId != null) {
-            validateEnterprise(enterpriseId);
-        }
+    public List<CollectorReportResponse> getCollectorReports(Integer enterpriseId) {
+        validateEnterprise(enterpriseId);
 
-        CollectorReportStatus statusFilter = null;
-        if (status != null && !status.isBlank()) {
-            try {
-                statusFilter = CollectorReportStatus.valueOf(status.trim().toUpperCase());
-            } catch (IllegalArgumentException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status không hợp lệ");
-            }
-        }
-
-        List<CollectorReport> reports;
-        if (enterpriseId != null) {
-            reports = collectorReportRepository
-                    .findByCollectionRequest_Enterprise_IdOrderByCreatedAtDesc(enterpriseId);
-        } else {
-            reports = collectorReportRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
-        }
-
-        if (statusFilter != null) {
-            CollectorReportStatus finalStatusFilter = statusFilter;
-            reports = reports.stream()
-                    .filter(r -> r.getStatus() == finalStatusFilter)
-                    .toList();
-        }
+        List<CollectorReport> reports = collectorReportRepository
+                .findByCollectionRequest_Enterprise_IdOrderByCreatedAtDesc(enterpriseId);
 
         List<Integer> reportIds = reports.stream()
                 .map(CollectorReport::getId)
@@ -68,6 +48,14 @@ public class EnterpriseCollectorReportServiceImpl implements EnterpriseCollector
                 .collect(Collectors.groupingBy(
                         img -> img.getCollectorReport().getId(),
                         Collectors.mapping(CollectorReportImage::getImageUrl, Collectors.toList())
+                ));
+
+        Map<Integer, List<WasteCategoryResponse>> categoriesByReportId = reportIds.isEmpty()
+                ? Collections.emptyMap()
+                : collectorReportItemRepository.findWithCategoryByCollectorReportIdIn(reportIds).stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getCollectorReport().getId(),
+                        Collectors.collectingAndThen(Collectors.toList(), this::toWasteCategoryResponses)
                 ));
 
         return reports.stream()
@@ -84,8 +72,36 @@ public class EnterpriseCollectorReportServiceImpl implements EnterpriseCollector
                         .longitude(r.getLongitude())
                         .createdAt(r.getCreatedAt())
                         .imageUrls(imageUrlsByReportId.getOrDefault(r.getId(), List.of()))
+                        .categories(categoriesByReportId.getOrDefault(r.getId(), List.of()))
                         .build())
                 .toList();
+    }
+
+    private List<WasteCategoryResponse> toWasteCategoryResponses(List<CollectorReportItem> items) {
+        Map<Integer, WasteCategoryResponse> byCategoryId = new LinkedHashMap<>();
+        for (CollectorReportItem item : items) {
+            if (item.getWasteCategory() == null || item.getWasteCategory().getId() == null) {
+                continue;
+            }
+            Integer categoryId = item.getWasteCategory().getId();
+            WasteCategoryResponse existing = byCategoryId.get(categoryId);
+            if (existing == null) {
+                byCategoryId.put(categoryId, WasteCategoryResponse.builder()
+                        .id(categoryId)
+                        .name(item.getWasteCategory().getName())
+                        .unit(item.getUnitSnapshot() != null ? item.getUnitSnapshot().name() : null)
+                        .pointPerUnit(item.getPointPerUnitSnapshot())
+                        .quantity(item.getQuantity())
+                        .build());
+            } else {
+                if (existing.getQuantity() == null) {
+                    existing.setQuantity(item.getQuantity());
+                } else if (item.getQuantity() != null) {
+                    existing.setQuantity(existing.getQuantity().add(item.getQuantity()));
+                }
+            }
+        }
+        return List.copyOf(byCategoryId.values());
     }
 
     private Enterprise validateEnterprise(Integer enterpriseId) {

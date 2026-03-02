@@ -3,17 +3,28 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseRequestReportDetailResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseWasteReportResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteCategoryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReport;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectorReportItem;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReportItem;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportImageRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorReportRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.ReportImageRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportItemRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseReportDetailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +32,9 @@ public class EnterpriseReportDetailServiceImpl implements EnterpriseReportDetail
     private final CollectionRequestRepository collectionRequestRepository;
     private final CollectorReportRepository collectorReportRepository;
     private final CollectorReportImageRepository collectorReportImageRepository;
+    private final CollectorReportItemRepository collectorReportItemRepository;
+    private final ReportImageRepository reportImageRepository;
+    private final WasteReportItemRepository wasteReportItemRepository;
 
     @Override
     public EnterpriseRequestReportDetailResponse getRequestReportDetail(Integer enterpriseId, Integer requestId) {
@@ -35,6 +49,12 @@ public class EnterpriseReportDetailServiceImpl implements EnterpriseReportDetail
         }
 
         WasteReport report = request.getReport();
+        List<String> wasteReportImageUrls = report == null ? List.of()
+                : reportImageRepository.findByReport_Id(report.getId()).stream()
+                .map(ReportImage::getImageUrl)
+                .toList();
+        List<WasteCategoryResponse> wasteReportCategories = report == null ? List.of()
+                : toWasteCategoryResponses(wasteReportItemRepository.findWithCategoryByReportId(report.getId()));
         EnterpriseWasteReportResponse wasteReport = report == null ? null : EnterpriseWasteReportResponse.builder()
                 .id(report.getId())
                 .reportCode(report.getReportCode())
@@ -45,6 +65,8 @@ public class EnterpriseReportDetailServiceImpl implements EnterpriseReportDetail
                 .latitude(report.getLatitude())
                 .longitude(report.getLongitude())
                 .images(report.getImages())
+                .imageUrls(wasteReportImageUrls)
+                .categories(wasteReportCategories)
                 .createdAt(report.getCreatedAt())
                 .build();
 
@@ -83,6 +105,64 @@ public class EnterpriseReportDetailServiceImpl implements EnterpriseReportDetail
                 .imageUrls(collectorReportImageRepository.findByCollectorReport_Id(report.getId()).stream()
                         .map(i -> i.getImageUrl())
                         .toList())
+                .categories(toWasteCategoryResponsesFromCollectorItems(
+                        collectorReportItemRepository.findWithCategoryByCollectorReportId(report.getId())
+                ))
                 .build();
+    }
+
+    private List<WasteCategoryResponse> toWasteCategoryResponses(List<WasteReportItem> items) {
+        Map<Integer, WasteCategoryResponse> byCategoryId = new LinkedHashMap<>();
+        for (WasteReportItem item : items) {
+            if (item.getWasteCategory() == null || item.getWasteCategory().getId() == null) {
+                continue;
+            }
+            Integer categoryId = item.getWasteCategory().getId();
+            WasteCategoryResponse existing = byCategoryId.get(categoryId);
+            if (existing == null) {
+                byCategoryId.put(categoryId, WasteCategoryResponse.builder()
+                        .id(categoryId)
+                        .name(item.getWasteCategory().getName())
+                        .unit(item.getUnitSnapshot() != null ? item.getUnitSnapshot().name()
+                                : (item.getWasteCategory().getUnit() != null ? item.getWasteCategory().getUnit().name() : null))
+                        .pointPerUnit(item.getWasteCategory().getPointPerUnit())
+                        .quantity(item.getQuantity())
+                        .build());
+            } else {
+                if (existing.getQuantity() == null) {
+                    existing.setQuantity(item.getQuantity());
+                } else if (item.getQuantity() != null) {
+                    existing.setQuantity(existing.getQuantity().add(item.getQuantity()));
+                }
+            }
+        }
+        return List.copyOf(byCategoryId.values());
+    }
+
+    private List<WasteCategoryResponse> toWasteCategoryResponsesFromCollectorItems(List<CollectorReportItem> items) {
+        Map<Integer, WasteCategoryResponse> byCategoryId = new LinkedHashMap<>();
+        for (CollectorReportItem item : items) {
+            if (item.getWasteCategory() == null || item.getWasteCategory().getId() == null) {
+                continue;
+            }
+            Integer categoryId = item.getWasteCategory().getId();
+            WasteCategoryResponse existing = byCategoryId.get(categoryId);
+            if (existing == null) {
+                byCategoryId.put(categoryId, WasteCategoryResponse.builder()
+                        .id(categoryId)
+                        .name(item.getWasteCategory().getName())
+                        .unit(item.getUnitSnapshot() != null ? item.getUnitSnapshot().name() : null)
+                        .pointPerUnit(item.getPointPerUnitSnapshot())
+                        .quantity(item.getQuantity())
+                        .build());
+            } else {
+                if (existing.getQuantity() == null) {
+                    existing.setQuantity(item.getQuantity());
+                } else if (item.getQuantity() != null) {
+                    existing.setQuantity(existing.getQuantity().add(item.getQuantity()));
+                }
+            }
+        }
+        return List.copyOf(byCategoryId.values());
     }
 }

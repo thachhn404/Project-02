@@ -27,6 +27,5 @@ public class CollectorReportResponse {
     private BigDecimal longitude;
     private LocalDateTime createdAt;
     private List<String> imageUrls;
-    // You might want to include items here as well if needed
-    // private List<CollectorReportItemResponse> items; 
+    private List<WasteCategoryResponse> categories;
 }

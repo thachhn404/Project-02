@@ -11,7 +11,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,11 +26,10 @@ public class EnterpriseCollectorReportController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
     public ResponseEntity<ApiResponse<List<CollectorReportResponse>>> getCollectorReports(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(name = "status", required = false) String status) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         Integer enterpriseId = extractEnterpriseId(jwt);
-        List<CollectorReportResponse> result = enterpriseCollectorReportService.getCollectorReports(enterpriseId, status);
+        List<CollectorReportResponse> result = enterpriseCollectorReportService.getCollectorReports(enterpriseId);
 
         return ResponseEntity.ok(ApiResponse.<List<CollectorReportResponse>>builder()
                 .result(result)
