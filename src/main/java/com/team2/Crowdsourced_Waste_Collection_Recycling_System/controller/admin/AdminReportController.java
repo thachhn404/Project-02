@@ -75,10 +75,11 @@ public class AdminReportController {
     @Operation(summary = "Lấy danh sách báo cáo thu gom (Collector Reports)", 
                description = "Xem tất cả hoặc lọc theo enterpriseId và status")
     public ResponseEntity<ApiResponse<List<CollectorReportResponse>>> getCollectorReports(
-            @RequestParam(name = "enterpriseId", required = false) Integer enterpriseId,
-            @RequestParam(name = "status", required = false) String status) {
+            @RequestParam(name = "enterpriseId", required = false) Integer enterpriseId
+//            @RequestParam(name = "status", required = false) String status
+    ) {
 
-        List<CollectorReportResponse> result = enterpriseCollectorReportService.getCollectorReports(enterpriseId, status);
+        List<CollectorReportResponse> result = enterpriseCollectorReportService.getCollectorReports(enterpriseId);
 
         return ResponseEntity.ok(ApiResponse.<List<CollectorReportResponse>>builder()
                 .result(result)
