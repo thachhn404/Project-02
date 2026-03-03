@@ -325,36 +325,12 @@ CREATE TABLE leaderboard (
 );
 GO
 
--- Point Rules
-CREATE TABLE point_rules (
-    id INT IDENTITY(1,1) NOT NULL,
-    enterprise_id INT NOT NULL,
-    rule_name NVARCHAR(255) NOT NULL,
-    rule_type NVARCHAR(30) NOT NULL,
-    min_weight_kg DECIMAL(10,2) NULL,
-    max_weight_kg DECIMAL(10,2) NULL,
-    min_quality_rating INT NULL,
-    max_processing_hours INT NULL,
-    base_points INT NOT NULL,
-    multiplier DECIMAL(3,2) NULL,
-    is_active BIT NULL,
-    valid_from DATETIME2 NULL,
-    valid_to DATETIME2 NULL,
-    priority INT NULL,
-    created_at DATETIME2 NULL,
-    updated_at DATETIME2 NULL,
-    CONSTRAINT pk_point_rules PRIMARY KEY (id),
-    CONSTRAINT fk_point_rules_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id)
-);
-GO
-
 -- Point Transactions
 CREATE TABLE point_transactions (
     id INT IDENTITY(1,1) NOT NULL,
     citizen_id INT NOT NULL,
     report_id INT NULL,
     collection_request_id INT NULL,
-    rule_id INT NULL,
     points INT NOT NULL,
     transaction_type NVARCHAR(30) NOT NULL,
     description NVARCHAR(500) NULL,
@@ -365,7 +341,6 @@ CREATE TABLE point_transactions (
     CONSTRAINT fk_point_transactions_citizen FOREIGN KEY (citizen_id) REFERENCES citizens(id),
     CONSTRAINT fk_point_transactions_report FOREIGN KEY (report_id) REFERENCES waste_reports(id),
     CONSTRAINT fk_point_transactions_collection_request FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id),
-    CONSTRAINT fk_point_transactions_rule FOREIGN KEY (rule_id) REFERENCES point_rules(id),
     CONSTRAINT fk_point_transactions_created_by FOREIGN KEY (created_by) REFERENCES users(id)
 );
 GO

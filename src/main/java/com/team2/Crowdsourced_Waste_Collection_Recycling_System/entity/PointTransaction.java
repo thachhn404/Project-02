@@ -42,10 +42,6 @@ public class PointTransaction {
     @JoinColumn(name = "collection_request_id")
     private CollectionRequest collectionRequest;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rule_id")
-    private PointRule rule;
-
     @Column(name = "points", nullable = false)
     private Integer points;
 

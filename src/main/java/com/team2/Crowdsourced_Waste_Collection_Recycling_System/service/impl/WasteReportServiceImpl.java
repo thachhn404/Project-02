@@ -493,16 +493,35 @@ public class WasteReportServiceImpl implements WasteReportService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
+        String normalizedType = normalizeComplaintType(request.getType());
+        request.setType(normalizedType);
+
+        CollectionRequest collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
+        if ("POINT".equals(normalizedType)) {
+            if (collectionRequest == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            if (!pointTransactionRepository.existsByCollectionRequestIdAndTransactionType(collectionRequest.getId(), "EARN")) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+        }
+
         Feedback feedback = citizenFeatureMapper.toFeedback(request);
         feedback.setCitizen(citizen);
         feedback.setFeedbackCode("FB-" + System.currentTimeMillis());
-        
-        CollectionRequest collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
         feedback.setCollectionRequest(collectionRequest);
         
         Feedback saved = feedbackRepository.save(feedback);
 
         return citizenFeatureMapper.toComplaintResponse(saved);
+    }
+
+    private static String normalizeComplaintType(String type) {
+        if (type == null) {
+            return null;
+        }
+        String normalized = type.trim().replaceAll("\\s+", "_");
+        return normalized.toUpperCase(Locale.ROOT);
     }
 
     @Override
