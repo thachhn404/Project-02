@@ -16,6 +16,8 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportIma
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.RolePermission;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.User;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Voucher;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.VoucherRedemption;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteCategory;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
@@ -35,6 +37,8 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authe
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authentication.UserRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.feedback.FeedbackRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.reward.PointTransactionRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.reward.VoucherRedemptionRepository;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.reward.VoucherRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -42,7 +46,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Configuration
 @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
@@ -64,6 +70,8 @@ public class DataSeeder {
             PermissionRepository permissionRepository,
             RolePermissionRepository rolePermissionRepository,
             PointTransactionRepository pointTransactionRepository,
+            VoucherRepository voucherRepository,
+            VoucherRedemptionRepository voucherRedemptionRepository,
             FeedbackRepository feedbackRepository,
             PasswordEncoder passwordEncoder) {
         return args -> {
@@ -148,6 +156,8 @@ public class DataSeeder {
                     .orElseThrow();
 
             seedWasteCategories(wasteCategoryRepository);
+            seedVouchers(voucherRepository);
+            seedVoucherRedemptions(citizen1, voucherRepository, voucherRedemptionRepository);
 
             seedCitizenAndEnterpriseFlow(
                     citizen1,
@@ -162,6 +172,241 @@ public class DataSeeder {
                     pointTransactionRepository,
                     feedbackRepository);
         };
+    }
+
+    private void seedVouchers(VoucherRepository voucherRepository) {
+        LocalDateTime now = LocalDateTime.now();
+
+        Voucher v1 = new Voucher();
+        v1.setBannerUrl("https://jollibee.com.vn/media/catalog/product/cache/9011257231b13517d19d9bae81fd87cc/m/_/m_n_ngon_ph_i_th_-_1.png");
+        v1.setLogoUrl("https://upload.wikimedia.org/wikipedia/en/8/84/Jollibee_2011_logo.svg");
+        v1.setTitle("Jollibee Voucher - 50,000 VND");
+        v1.setValueDisplay("50,000 VND");
+        v1.setPointsRequired(55000);
+        v1.setValidUntil(LocalDate.of(2026, 12, 31));
+        v1.setActive(true);
+        v1.setRemainingStock(100);
+        v1.setTerms(List.of(
+                "Valid for dine-in and takeout only.",
+                "Not applicable for delivery orders.",
+                "One voucher per transaction."
+        ));
+        v1.setCreatedAt(now);
+        v1.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v1);
+
+        Voucher v2 = new Voucher();
+        v2.setBannerUrl("https://s3-hcmc02.higiocloud.vn/phuclong/2025/04/image-20250409083419.png");
+        v2.setLogoUrl("https://www.phuclong.com.vn/_next/static/images/logo-ba196fcddcd6f23a70406fd4cf71d422.png");
+        v2.setTitle("Phuc Long Voucher - 30,000 VND");
+        v2.setValueDisplay("30,000 VND");
+        v2.setPointsRequired(33000);
+        v2.setValidUntil(LocalDate.of(2026, 11, 30));
+        v2.setActive(true);
+        v2.setRemainingStock(100);
+        v2.setTerms(List.of(
+                "Applicable for all beverages.",
+                "Valid at all Phuc Long stores nationwide.",
+                "Cannot be combined with other promotions."
+        ));
+        v2.setCreatedAt(now);
+        v2.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v2);
+
+        Voucher v3 = new Voucher();
+        v3.setBannerUrl("https://katinat.vn/wp-content/uploads/2024/03/image.png");
+        v3.setLogoUrl("https://katinat.vn/wp-content/uploads/2023/12/cropped-Kat-Logo-fa-rgb-05__1_-removebg-preview.png");
+        v3.setTitle("Katinat Voucher - 50,000 VND");
+        v3.setValueDisplay("50,000 VND");
+        v3.setPointsRequired(55000);
+        v3.setValidUntil(LocalDate.of(2026, 12, 15));
+        v3.setActive(true);
+        v3.setRemainingStock(100);
+        v3.setTerms(List.of(
+                "Valid at all Katinat branches.",
+                "Not redeemable for cash.",
+                "Valid for one-time use only."
+        ));
+        v3.setCreatedAt(now);
+        v3.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v3);
+
+        Voucher v4 = new Voucher();
+        v4.setBannerUrl("https://static.kfcvietnam.com.vn/images/category/lg/MON%20AN%20NHE.jpg?v=LZrXEL");
+        v4.setLogoUrl("https://web.archive.org/web/20220716042518im_/https://brasol.vn/public/ckeditor/uploads/thiet-ke-logo-tin-tuc/logo-kfc-png.png");
+        v4.setTitle("KFC Voucher - 50,000 VND");
+        v4.setValueDisplay("50,000 VND");
+        v4.setPointsRequired(55000);
+        v4.setValidUntil(LocalDate.of(2026, 12, 31));
+        v4.setActive(true);
+        v4.setRemainingStock(100);
+        v4.setTerms(List.of(
+                "Valid for all menu items.",
+                "Show QR code at cashier.",
+                "Not valid with other discounts."
+        ));
+        v4.setCreatedAt(now);
+        v4.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v4);
+
+        Voucher v5 = new Voucher();
+        v5.setBannerUrl("https://www.highlandscoffee.com.vn/vnt_upload/home/web_banner_2000x2000.jpg");
+        v5.setLogoUrl("https://www.highlandscoffee.com.vn/vnt_upload/weblink/red_BG_logo800.png");
+        v5.setTitle("Highlands Coffee Voucher - 100,000 VND");
+        v5.setValueDisplay("100,000 VND");
+        v5.setPointsRequired(110000);
+        v5.setValidUntil(LocalDate.of(2026, 12, 31));
+        v5.setActive(true);
+        v5.setRemainingStock(100);
+        v5.setTerms(List.of(
+                "Valid for all drinks and food items.",
+                "Minimum bill required.",
+                "Cannot be exchanged for cash."
+        ));
+        v5.setCreatedAt(now);
+        v5.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v5);
+
+        Voucher v6 = new Voucher();
+        v6.setBannerUrl("https://cdn.prod.website-files.com/649249d29a20bd6bc3deac48/649249d29a20bd6bc3deae34_TousLesJours_MangoCloudCake.jpg");
+        v6.setLogoUrl("https://cdn.prod.website-files.com/649249d29a20bd6bc3deac45/69692c3d9117f3d73ff839fa_4.0%20BI_Logo_Full_Green-p-1080.png");
+        v6.setTitle("Tous Les Jours Voucher - 50,000 VND");
+        v6.setValueDisplay("50,000 VND");
+        v6.setPointsRequired(55000);
+        v6.setValidUntil(LocalDate.of(2026, 10, 31));
+        v6.setActive(true);
+        v6.setRemainingStock(100);
+        v6.setTerms(List.of(
+                "Applicable for all bakery products.",
+                "Valid for in-store purchases only.",
+                "One voucher per receipt."
+        ));
+        v6.setCreatedAt(now);
+        v6.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v6);
+
+        Voucher v7 = new Voucher();
+        v7.setBannerUrl("https://dingtea.vn/images/thu-3/image_cover.jpg");
+        v7.setLogoUrl("https://dingtea.vn/images/logospare.png");
+        v7.setTitle("Ding Tea Voucher - 50,000 VND");
+        v7.setValueDisplay("50,000 VND");
+        v7.setPointsRequired(55000);
+        v7.setValidUntil(LocalDate.of(2026, 9, 30));
+        v7.setActive(true);
+        v7.setRemainingStock(100);
+        v7.setTerms(List.of(
+                "Valid for all drinks.",
+                "Cannot be combined with other promotions.",
+                "Valid nationwide."
+        ));
+        v7.setCreatedAt(now);
+        v7.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v7);
+
+        Voucher v8 = new Voucher();
+        v8.setBannerUrl("https://www.lotteria.vn/media/catalog/product/cache/400x400/g/_/g_r_n_ph_n_1_3.jpg.webp");
+        v8.setLogoUrl("https://www.lotteria.vn/grs-static/images/logo-white.svg");
+        v8.setTitle("Lotteria Voucher - 50,000 VND");
+        v8.setValueDisplay("50,000 VND");
+        v8.setPointsRequired(55000);
+        v8.setValidUntil(LocalDate.of(2026, 12, 31));
+        v8.setActive(true);
+        v8.setRemainingStock(100);
+        v8.setTerms(List.of(
+                "Valid for all menu items.",
+                "Not applicable for delivery.",
+                "One-time redemption only."
+        ));
+        v8.setCreatedAt(now);
+        v8.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v8);
+
+        Voucher v9 = new Voucher();
+        v9.setBannerUrl("https://content-prod-live.cert.starbucks.com/binary/v2/asset/137-106110.jpg");
+        v9.setLogoUrl("https://mondialbrand.com/wp-content/uploads/2023/08/logo-starbucks-y-nghia-va-lich-su-cua-bieu-tuong-ca-phe-nang-tien-ca-tu-1917-8.jpg");
+        v9.setTitle("Starbucks Voucher - 100,000 VND");
+        v9.setValueDisplay("100,000 VND");
+        v9.setPointsRequired(110000);
+        v9.setValidUntil(LocalDate.of(2026, 12, 31));
+        v9.setActive(true);
+        v9.setRemainingStock(100);
+        v9.setTerms(List.of(
+                "Valid at all Starbucks Vietnam stores.",
+                "Not valid for bottled beverages.",
+                "Cannot be redeemed for cash."
+        ));
+        v9.setCreatedAt(now);
+        v9.setUpdatedAt(now);
+        createVoucherIfNotFound(voucherRepository, v9);
+    }
+
+    private void createVoucherIfNotFound(VoucherRepository voucherRepository, Voucher voucher) {
+        if (voucher.getTitle() == null || voucher.getTitle().isBlank()) {
+            return;
+        }
+        if (voucherRepository.findByTitleIgnoreCase(voucher.getTitle()).isPresent()) {
+            return;
+        }
+        Voucher saved = voucherRepository.save(voucher);
+        if (saved.getId() != null && (saved.getVoucherCode() == null || saved.getVoucherCode().isBlank())) {
+            saved.setVoucherCode(String.format("V%03d", saved.getId()));
+            voucherRepository.save(saved);
+        }
+    }
+
+    private void seedVoucherRedemptions(
+            Citizen citizen,
+            VoucherRepository voucherRepository,
+            VoucherRedemptionRepository voucherRedemptionRepository) {
+        if (citizen == null || citizen.getId() == null) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        seedVoucherRedemption(citizen, voucherRepository, voucherRedemptionRepository,
+                "Jollibee Voucher - 50,000 VND", "VOUCHER-JOLLI-001", 55000, "ACTIVE", now.minusDays(2));
+        seedVoucherRedemption(citizen, voucherRepository, voucherRedemptionRepository,
+                "Phuc Long Voucher - 30,000 VND", "VOUCHER-PLONG-002", 33000, "USED", now.minusDays(10));
+        seedVoucherRedemption(citizen, voucherRepository, voucherRedemptionRepository,
+                "Katinat Voucher - 50,000 VND", "VOUCHER-KATIN-003", 55000, "EXPIRED", now.minusDays(40));
+        seedVoucherRedemption(citizen, voucherRepository, voucherRedemptionRepository,
+                "KFC Voucher - 50,000 VND", "VOUCHER-KFCVN-004", 55000, "ACTIVE", now.minusDays(1));
+        seedVoucherRedemption(citizen, voucherRepository, voucherRedemptionRepository,
+                "Highlands Coffee Voucher - 100,000 VND", "VOUCHER-HIGH-005", 110000, "ACTIVE", now.minusDays(5));
+    }
+
+    private void seedVoucherRedemption(
+            Citizen citizen,
+            VoucherRepository voucherRepository,
+            VoucherRedemptionRepository voucherRedemptionRepository,
+            String voucherTitle,
+            String redemptionCode,
+            Integer pointsSpent,
+            String status,
+            LocalDateTime redeemedAt) {
+        if (voucherTitle == null || voucherTitle.isBlank()
+                || redemptionCode == null || redemptionCode.isBlank()) {
+            return;
+        }
+
+        if (voucherRedemptionRepository.existsByRedemptionCodeIgnoreCase(redemptionCode)) {
+            return;
+        }
+
+        Voucher voucher = voucherRepository.findByTitleIgnoreCase(voucherTitle).orElse(null);
+        if (voucher == null || voucher.getId() == null) {
+            return;
+        }
+
+        VoucherRedemption redemption = new VoucherRedemption();
+        redemption.setCitizen(citizen);
+        redemption.setVoucher(voucher);
+        redemption.setRedemptionCode(redemptionCode);
+        redemption.setPointsSpent(pointsSpent != null ? pointsSpent : 0);
+        redemption.setStatus(status != null ? status : "ACTIVE");
+        redemption.setRedeemedAt(redeemedAt != null ? redeemedAt : LocalDateTime.now());
+        voucherRedemptionRepository.save(redemption);
     }
 
     private void seedWasteCategories(WasteCategoryRepository wasteCategoryRepository) {

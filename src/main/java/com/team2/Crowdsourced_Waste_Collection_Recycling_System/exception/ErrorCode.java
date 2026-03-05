@@ -32,6 +32,11 @@ public enum ErrorCode {
     COLLECTION_REQUEST_NOT_FOUND(1021, "Collection request not found", HttpStatus.NOT_FOUND),
     COLLECTOR_NOT_FOUND(1022, "Collector not found", HttpStatus.NOT_FOUND),
     LOCATION_TOO_FAR(1023, "Location is too far from report location", HttpStatus.BAD_REQUEST),
+    VOUCHER_NOT_FOUND(1024, "Voucher not found", HttpStatus.NOT_FOUND),
+    VOUCHER_INACTIVE(1025, "Voucher is inactive", HttpStatus.BAD_REQUEST),
+    VOUCHER_EXPIRED(1026, "Voucher is expired", HttpStatus.BAD_REQUEST),
+    VOUCHER_OUT_OF_STOCK(1027, "Voucher is out of stock", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_POINTS(1028, "Insufficient points", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

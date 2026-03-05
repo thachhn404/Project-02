@@ -19,7 +19,7 @@ jwt:
 
 app:
   seed:
-    enabled: true
+    enabled: false
 
 cloudinary:
   cloud-name: ""

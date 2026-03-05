@@ -1,0 +1,28 @@
+package com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class VoucherResponse {
+    Integer id;
+    String voucherCode;
+    String bannerUrl;
+    String logoUrl;
+    String value;
+    String title;
+    LocalDate validUntil;
+    Integer pointsRequired;
+    List<String> terms;
+}
