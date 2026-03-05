@@ -6,6 +6,8 @@ public enum WasteReportStatus {
 //enterprise chap nhan chuan bi phan cho collector
     ACCEPTED_ENTERPRISE,
 
+    REASSIGN,
+
 //da phan cong cho collector
     ASSIGNED,
 

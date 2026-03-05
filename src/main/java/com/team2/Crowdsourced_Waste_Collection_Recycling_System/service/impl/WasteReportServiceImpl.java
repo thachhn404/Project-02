@@ -98,10 +98,8 @@ public class WasteReportServiceImpl implements WasteReportService {
     @Override
     @Transactional
     public WasteReportResponse createReport(CreateWasteReportRequest request, String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.CITIZEN_NOT_FOUND));
-
-        validateCreateRequest(request);
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.CITIZEN_NOT_FOUND);
+        List<Integer> categoryIds = validateCreateRequest(request);
 
         BigDecimal latitude = BigDecimal.valueOf(request.getLatitude()).setScale(8, RoundingMode.HALF_UP);
         BigDecimal longitude = BigDecimal.valueOf(request.getLongitude()).setScale(8, RoundingMode.HALF_UP);
@@ -145,11 +143,7 @@ public class WasteReportServiceImpl implements WasteReportService {
             saved = wasteReportRepository.save(saved);
         }
 
-        List<Integer> categoryIds = resolveCategoryIds(request.getCategoryIds());
         List<BigDecimal> quantities = request.getQuantities();
-        if (quantities == null || quantities.size() != categoryIds.size()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
 
         List<WasteCategory> categories = wasteCategoryRepository.findAllById(categoryIds);
         if (categories.size() != categoryIds.size()) {
@@ -205,20 +199,12 @@ public class WasteReportServiceImpl implements WasteReportService {
     @Override
     @Transactional
     public WasteReportResponse updateReport(Integer reportId, UpdateWasteReportRequest request, String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        WasteReport report = wasteReportRepository.findById(reportId)
-                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
-
-        if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
+        WasteReport report = requireOwnedReport(reportId, citizen);
         if (report.getStatus() != WasteReportStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ được chỉnh sửa khi status = PENDING");
         }
 
-        // Bỏ cập nhật wasteType, luôn cố định RECYCLABLE
         if (request.getDescription() != null) {
             report.setDescription(request.getDescription());
         }
@@ -289,15 +275,8 @@ public class WasteReportServiceImpl implements WasteReportService {
     @Override
     @Transactional
     public void deleteReport(Integer reportId, String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        WasteReport report = wasteReportRepository.findById(reportId)
-                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
-
-        if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
+        WasteReport report = requireOwnedReport(reportId, citizen);
         if (report.getStatus() != WasteReportStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ được huỷ khi status = PENDING");
         }
@@ -312,8 +291,7 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     @Override
     public List<WasteReportResponse> getMyReports(String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
 
         List<WasteReport> reports = wasteReportRepository.findByCitizen_Id(citizen.getId());
         List<Integer> reportIds = reports.stream().map(WasteReport::getId).toList();
@@ -322,13 +300,7 @@ public class WasteReportServiceImpl implements WasteReportService {
                 : wasteReportItemRepository.findWithCategoryByReportIdIn(reportIds).stream()
                 .collect(Collectors.groupingBy(
                         i -> i.getReport().getId(),
-                        Collectors.mapping(i -> WasteCategoryResponse.builder()
-                                .id(i.getWasteCategory().getId())
-                                .name(i.getWasteCategory().getName())
-                                .unit(i.getWasteCategory().getUnit() != null ? i.getWasteCategory().getUnit().name() : null)
-                                .pointPerUnit(i.getWasteCategory().getPointPerUnit())
-                                .quantity(i.getQuantity())
-                                .build(), Collectors.toList())
+                        Collectors.mapping(this::toCategoryResponse, Collectors.toList())
                 ));
 
         return reports.stream()
@@ -348,15 +320,8 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     @Override
     public WasteReportResponse getMyReportById(Integer reportId, String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        WasteReport report = wasteReportRepository.findById(reportId)
-                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
-
-        if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
+        WasteReport report = requireOwnedReport(reportId, citizen);
 
         return WasteReportResponse.builder()
                 .id(report.getId())
@@ -374,15 +339,8 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     @Override
     public CitizenReportResultResponse getMyReportResult(Integer reportId, String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        WasteReport report = wasteReportRepository.findById(reportId)
-                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
-
-        if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
+        WasteReport report = requireOwnedReport(reportId, citizen);
 
         CollectionRequest request = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
         if (request == null) {
@@ -433,18 +391,13 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     @Override
     public List<CitizenRewardHistoryResponse> getRewardHistory(String citizenEmail, LocalDateTime startDate, LocalDateTime endDate) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
 
         List<PointTransaction> transactions = pointTransactionRepository.findByCitizenId(citizen.getId());
 
         if (startDate != null && endDate != null) {
             transactions = transactions.stream()
-                    .filter(tx -> {
-                        LocalDateTime created = tx.getCreatedAt();
-                        return (created.isEqual(startDate) || created.isAfter(startDate)) &&
-                                (created.isEqual(endDate) || created.isBefore(endDate));
-                    })
+                    .filter(tx -> isInRange(tx.getCreatedAt(), startDate, endDate))
                     .collect(Collectors.toList());
         }
 
@@ -455,16 +408,11 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     @Override
     public List<CitizenLeaderboardResponse> getLeaderboard(String region) {
-        // Simple implementation: fetch all citizens in region, sort by totalPoints
-        // For larger scale, should use a dedicated Leaderboard entity updated by batch jobs
         List<Citizen> citizens = citizenRepository.findAll().stream()
-                .filter(c -> region == null || region.isBlank() ||
-                        (c.getWard() != null && c.getWard().equalsIgnoreCase(region)) ||
-                        (c.getCity() != null && c.getCity().equalsIgnoreCase(region)))
+                .filter(c -> matchesRegion(c, region))
                 .sorted((c1, c2) -> {
-                    int p1 = c1.getTotalPoints() != null ? c1.getTotalPoints() : 0;
-                    int p2 = c2.getTotalPoints() != null ? c2.getTotalPoints() : 0;
-                    // Sort desc, if equal points, sort by id (asc) as tie-breaker (older first)
+                    int p1 = pointsOrZero(c1);
+                    int p2 = pointsOrZero(c2);
                     if (p1 != p2) return p2 - p1;
                     return c1.getId() - c2.getId();
                 })
@@ -483,8 +431,7 @@ public class WasteReportServiceImpl implements WasteReportService {
     @Override
     @Transactional
     public ComplaintResponse createComplaint(CreateComplaintRequest request, String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
 
         WasteReport report = wasteReportRepository.findById(request.getReportId())
                 .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
@@ -493,11 +440,22 @@ public class WasteReportServiceImpl implements WasteReportService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
+        String normalizedType = normalizeComplaintType(request.getType());
+        request.setType(normalizedType);
+
+        CollectionRequest collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
+        if ("POINT".equals(normalizedType)) {
+            if (collectionRequest == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            if (!pointTransactionRepository.existsByCollectionRequestIdAndTransactionType(collectionRequest.getId(), "EARN")) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+        }
+
         Feedback feedback = citizenFeatureMapper.toFeedback(request);
         feedback.setCitizen(citizen);
         feedback.setFeedbackCode("FB-" + System.currentTimeMillis());
-        
-        CollectionRequest collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
         feedback.setCollectionRequest(collectionRequest);
         
         Feedback saved = feedbackRepository.save(feedback);
@@ -505,15 +463,20 @@ public class WasteReportServiceImpl implements WasteReportService {
         return citizenFeatureMapper.toComplaintResponse(saved);
     }
 
+    private static String normalizeComplaintType(String type) {
+        if (type == null) {
+            return null;
+        }
+        String normalized = type.trim().replaceAll("\\s+", "_");
+        return normalized.toUpperCase(Locale.ROOT);
+    }
+
     @Override
     public List<ComplaintResponse> getComplaints(String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
 
-        return feedbackRepository.findAll().stream()
-                .filter(f -> f.getCitizen().getId().equals(citizen.getId()))
+        return feedbackRepository.findByCitizenIdOrderByCreatedAtDesc(citizen.getId()).stream()
                 .map(citizenFeatureMapper::toComplaintResponse)
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -535,13 +498,7 @@ public class WasteReportServiceImpl implements WasteReportService {
 
     private List<WasteCategoryResponse> getCategoriesForReport(Integer reportId) {
         return wasteReportItemRepository.findWithCategoryByReportId(reportId).stream()
-                .map(i -> WasteCategoryResponse.builder()
-                        .id(i.getWasteCategory().getId())
-                        .name(i.getWasteCategory().getName())
-                        .unit(i.getWasteCategory().getUnit() != null ? i.getWasteCategory().getUnit().name() : null)
-                        .pointPerUnit(i.getWasteCategory().getPointPerUnit())
-                        .quantity(i.getQuantity())
-                        .build())
+                .map(this::toCategoryResponse)
                 .toList();
     }
 
@@ -554,13 +511,24 @@ public class WasteReportServiceImpl implements WasteReportService {
                 .build();
     }
 
+    private WasteCategoryResponse toCategoryResponse(WasteReportItem item) {
+        WasteCategory category = item.getWasteCategory();
+        return WasteCategoryResponse.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .unit(category.getUnit() != null ? category.getUnit().name() : null)
+                .pointPerUnit(category.getPointPerUnit())
+                .quantity(item.getQuantity())
+                .build();
+    }
+
     private List<String> getImageUrls(Integer reportId) {
         return reportImageRepository.findByReport_Id(reportId).stream()
                 .map(ReportImage::getImageUrl)
                 .collect(Collectors.toList());
     }
 
-    private void validateCreateRequest(CreateWasteReportRequest request) {
+    private List<Integer> validateCreateRequest(CreateWasteReportRequest request) {
         if (request == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
@@ -570,8 +538,9 @@ public class WasteReportServiceImpl implements WasteReportService {
         if (request.getCategoryIds() == null || request.getCategoryIds().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
+        List<Integer> resolvedCategoryIds = resolveCategoryIds(request.getCategoryIds());
         if (request.getQuantities() == null || request.getQuantities().isEmpty() ||
-                request.getQuantities().size() != resolveCategoryIds(request.getCategoryIds()).size()) {
+                request.getQuantities().size() != resolvedCategoryIds.size()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         for (MultipartFile image : request.getImages()) {
@@ -591,8 +560,7 @@ public class WasteReportServiceImpl implements WasteReportService {
         if (lat < -90.0 || lat > 90.0 || lng < -180.0 || lng > 180.0) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
-        // Bỏ yêu cầu nhập wasteType: luôn cố định RECYCLABLE
-        
+        return resolvedCategoryIds;
     }
 
     private void saveReportImages(WasteReport report, List<MultipartFile> images, LocalDateTime now) {
@@ -626,12 +594,47 @@ public class WasteReportServiceImpl implements WasteReportService {
         return switch (status) {
             case PENDING -> "PENDING";
             case ACCEPTED_ENTERPRISE -> "ACCEPTED";
+            case REASSIGN -> "REASSIGN";
             case ASSIGNED, ACCEPTED_COLLECTOR -> "ASSIGNED";
             case ON_THE_WAY -> "ON THE WAY";
             case COLLECTED -> "COLLECTED";
             case REJECTED -> "REJECTED";
             case TIMED_OUT -> "TIMED_OUT";
         };
+    }
+
+    private Citizen requireCitizenByEmail(String citizenEmail, ErrorCode errorCode) {
+        return citizenRepository.findByUser_Email(citizenEmail)
+                .orElseThrow(() -> new AppException(errorCode));
+    }
+
+    private WasteReport requireOwnedReport(Integer reportId, Citizen citizen) {
+        WasteReport report = wasteReportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND));
+        if (report.getCitizen() == null || !citizen.getId().equals(report.getCitizen().getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        return report;
+    }
+
+    private static boolean isInRange(LocalDateTime value, LocalDateTime start, LocalDateTime end) {
+        if (value == null) {
+            return false;
+        }
+        return (value.isEqual(start) || value.isAfter(start)) &&
+                (value.isEqual(end) || value.isBefore(end));
+    }
+
+    private static int pointsOrZero(Citizen citizen) {
+        return citizen.getTotalPoints() != null ? citizen.getTotalPoints() : 0;
+    }
+
+    private static boolean matchesRegion(Citizen citizen, String region) {
+        if (region == null || region.isBlank()) {
+            return true;
+        }
+        return (citizen.getWard() != null && citizen.getWard().equalsIgnoreCase(region)) ||
+                (citizen.getCity() != null && citizen.getCity().equalsIgnoreCase(region));
     }
 
     private List<Integer> resolveCategoryIds(List<String> rawValues) {

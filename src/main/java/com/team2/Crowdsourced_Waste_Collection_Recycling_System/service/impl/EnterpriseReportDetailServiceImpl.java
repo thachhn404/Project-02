@@ -38,15 +38,8 @@ public class EnterpriseReportDetailServiceImpl implements EnterpriseReportDetail
 
     @Override
     public EnterpriseRequestReportDetailResponse getRequestReportDetail(Integer enterpriseId, Integer requestId) {
-        if (enterpriseId == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        CollectionRequest request = collectionRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Yêu cầu không tồn tại"));
-        if (request.getEnterprise() == null || request.getEnterprise().getId() == null
-                || !request.getEnterprise().getId().equals(enterpriseId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Yêu cầu không tồn tại");
-        }
+        requireEnterpriseId(enterpriseId);
+        CollectionRequest request = requireOwnedRequest(enterpriseId, requestId);
 
         WasteReport report = request.getReport();
         List<String> wasteReportImageUrls = report == null ? List.of()
@@ -87,6 +80,22 @@ public class EnterpriseReportDetailServiceImpl implements EnterpriseReportDetail
                 .wasteReport(wasteReport)
                 .collectorReport(collectorReport)
                 .build();
+    }
+
+    private static void requireEnterpriseId(Integer enterpriseId) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+    }
+
+    private CollectionRequest requireOwnedRequest(Integer enterpriseId, Integer requestId) {
+        CollectionRequest request = collectionRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Yêu cầu không tồn tại"));
+        if (request.getEnterprise() == null || request.getEnterprise().getId() == null
+                || !request.getEnterprise().getId().equals(enterpriseId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Yêu cầu không tồn tại");
+        }
+        return request;
     }
 
     private CollectorReportResponse toCollectorReportResponse(CollectorReport report) {

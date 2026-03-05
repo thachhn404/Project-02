@@ -33,7 +33,7 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
     private final WorkRuleProperties workRuleProperties;
 
     @Override
-    @Scheduled(fixedRate = 300000) // Check every 5 minutes
+    @Scheduled(fixedRate = 300000)
     @Transactional
     public void checkAssignedTasksTimeout() {
         int acceptTimeoutHours = workRuleProperties.getAcceptTimeoutHours();
@@ -67,7 +67,7 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
     }
 
     @Override
-    @Scheduled(fixedRate = 3600000) // Check every hour
+    @Scheduled(fixedRate = 3600000)
     @Transactional
     public void checkSlaViolations() {
         int slaHours = workRuleProperties.getSlaHours();

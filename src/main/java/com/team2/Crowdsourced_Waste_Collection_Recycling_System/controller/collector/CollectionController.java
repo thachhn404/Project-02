@@ -54,6 +54,16 @@ public class CollectionController {
         return ApiResponse.<java.util.List<CollectorTaskResponse>>builder().result(tasks).build();
     }
 
+    @GetMapping("/tasks/status_counts")
+    @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Đếm task theo trạng thái", description = "Trả về số lượng task của collector theo từng status")
+    public ApiResponse<java.util.List<CollectorTaskStatusCountResponse>> getTaskStatusCounts(
+            @AuthenticationPrincipal Jwt jwt) {
+        Integer collectorId = extractCollectorId(jwt);
+        java.util.List<CollectorTaskStatusCountResponse> result = collectorService.getTaskStatusCounts(collectorId);
+        return ApiResponse.<java.util.List<CollectorTaskStatusCountResponse>>builder().result(result).build();
+    }
+
     @GetMapping("/work_history")
     @PreAuthorize("hasRole('COLLECTOR')")
     @Operation(summary = "Lịch sử công việc", description = "Liệt kê lịch sử làm việc, hỗ trợ lọc trạng thái")
@@ -122,12 +132,12 @@ public class CollectionController {
 
     /**
      * Collector từ chối task (chỉ khi đang assigned):
-     * - status -> accepted_enterprise
+     * - status -> reassign
      * - unassign collector để enterprise phân công lại
      */
     @PostMapping("/{requestId}/reject")
     @PreAuthorize("hasRole('COLLECTOR')")
-    @Operation(summary = "Từ chối nhiệm vụ", description = "Chỉ khi đang ASSIGNED; trả về ACCEPTED_ENTERPRISE")
+    @Operation(summary = "Từ chối nhiệm vụ", description = "Chỉ khi đang ASSIGNED; chuyển về REASSIGN để gán collector khác")
     public ApiResponse<CollectionRequestActionResponse> rejectTask(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer requestId,
@@ -138,7 +148,7 @@ public class CollectionController {
         return ApiResponse.<CollectionRequestActionResponse>builder()
                 .result(CollectionRequestActionResponse.builder()
                         .collectionRequestId(requestId)
-                        .status("accepted_enterprise")
+                        .status("reassign")
                         .actionAt(LocalDateTime.now())
                         .build())
                 .build();

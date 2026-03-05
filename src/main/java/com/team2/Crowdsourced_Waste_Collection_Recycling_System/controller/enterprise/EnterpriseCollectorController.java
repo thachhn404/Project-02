@@ -4,6 +4,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.Crea
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CreateCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.VehicleType;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
@@ -30,14 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/enterprise/collectors")
 @RequiredArgsConstructor
 @Tag(name = "Enterprise Collectors", description = "Quản lý nhân viên thu gom của doanh nghiệp")
-public class EnterpriseCollectorController {
+public class EnterpriseCollectorController extends EnterpriseControllerSupport {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final EnterpriseRepository enterpriseRepository;
@@ -51,29 +51,14 @@ public class EnterpriseCollectorController {
     public ApiResponse<CreateCollectorResponse> createCollector(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody CreateCollectorRequest request) {
-        Integer enterpriseId = extractEnterpriseId(jwt);
-
-        if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu dữ liệu");
-        }
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email không được để trống");
-        }
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu không được để trống");
-        }
-        if (request.getFullName() == null || request.getFullName().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Họ tên không được để trống");
-        }
+        Integer enterpriseId = extractEnterpriseId(jwt, "Chỉ ENTERPRISE mới được tạo collector");
+        validateCreateCollectorRequest(request);
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã tồn tại trong hệ hệ thống");
         }
 
-        Role collectorRole = roleRepository.findByRoleCodeIgnoreCase("COLLECTOR")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quyền (Role) không tồn tại"));
-
-        var enterprise = enterpriseRepository.findById(enterpriseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enterprise không tồn tại"));
+        Role collectorRole = requireCollectorRole();
+        var enterprise = requireEnterprise(enterpriseId);
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -104,20 +89,18 @@ public class EnterpriseCollectorController {
         savedCollector.setEmployeeCode(String.format("C%03d", savedCollector.getId()));
         savedCollector = collectorRepository.save(savedCollector);
 
-        return ApiResponse.<CreateCollectorResponse>builder()
-                .result(CreateCollectorResponse.builder()
-                        .userId(savedUser.getId())
-                        .collectorId(savedCollector.getId())
-                        .enterpriseId(enterpriseId)
-                        .email(savedUser.getEmail())
-                        .fullName(savedUser.getFullName())
-                        .phone(savedUser.getPhone())
-                        .employeeCode(savedCollector.getEmployeeCode())
-                        .status(savedCollector.getStatus() != null ? savedCollector.getStatus().name().toLowerCase() : null)
-                        .vehicleType(savedCollector.getVehicleType())
-                        .vehiclePlate(savedCollector.getVehiclePlate())
-                        .build())
-                .build();
+        return ok(CreateCollectorResponse.builder()
+                .userId(savedUser.getId())
+                .collectorId(savedCollector.getId())
+                .enterpriseId(enterpriseId)
+                .email(savedUser.getEmail())
+                .fullName(savedUser.getFullName())
+                .phone(savedUser.getPhone())
+                .employeeCode(savedCollector.getEmployeeCode())
+                .status(savedCollector.getStatus() != null ? savedCollector.getStatus().name().toLowerCase() : null)
+                .vehicleType(savedCollector.getVehicleType())
+                .vehiclePlate(savedCollector.getVehiclePlate())
+                .build());
     }
 
     @GetMapping
@@ -127,7 +110,7 @@ public class EnterpriseCollectorController {
     public ApiResponse<List<CreateCollectorResponse>> getCollectors(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(value = "status", required = false) String status) {
-        Integer enterpriseId = extractEnterpriseId(jwt);
+        Integer enterpriseId = extractEnterpriseId(jwt, "Chỉ ENTERPRISE mới được tạo collector");
 
         List<Collector> collectors;
         if (status == null || status.isBlank()) {
@@ -140,42 +123,53 @@ public class EnterpriseCollectorController {
             collectors = collectorRepository.findByEnterprise_IdAndStatusOrderByCreatedAtDesc(enterpriseId, collectorStatus);
         }
 
-        List<CreateCollectorResponse> result = new ArrayList<>();
-        for (Collector c : collectors) {
-            Integer userId = c.getUser() != null ? c.getUser().getId() : null;
-            String phone = c.getUser() != null ? c.getUser().getPhone() : null;
+        List<CreateCollectorResponse> result = collectors.stream()
+                .map(c -> toResponse(c, enterpriseId))
+                .toList();
 
-            result.add(CreateCollectorResponse.builder()
-                    .userId(userId)
-                    .collectorId(c.getId())
-                    .enterpriseId(enterpriseId)
-                    .email(c.getEmail())
-                    .fullName(c.getFullName())
-                    .phone(phone)
-                    .employeeCode(c.getEmployeeCode())
-                    .status(c.getStatus() != null ? c.getStatus().name().toLowerCase() : null)
-                    .vehicleType(c.getVehicleType())
-                    .vehiclePlate(c.getVehiclePlate())
-                    .violationCount(c.getViolationCount())
-                    .build());
-        }
-
-        return ApiResponse.<List<CreateCollectorResponse>>builder()
-                .result(result)
-                .build();
+        return ok(result);
     }
 
-    private Integer extractEnterpriseId(Jwt jwt) {
-        if (jwt == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Thiếu token");
+    private static void validateCreateCollectorRequest(CreateCollectorRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu dữ liệu");
         }
-        Object value = jwt.getClaims().get("enterpriseId");
-        if (value == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ ENTERPRISE mới được tạo collector");
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email không được để trống");
         }
-        if (value instanceof Number number) {
-            return number.intValue();
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu không được để trống");
         }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "enterpriseId không hợp lệ");
+        if (request.getFullName() == null || request.getFullName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Họ tên không được để trống");
+        }
+    }
+
+    private Role requireCollectorRole() {
+        return roleRepository.findByRoleCodeIgnoreCase("COLLECTOR")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quyền (Role) không tồn tại"));
+    }
+
+    private Enterprise requireEnterprise(Integer enterpriseId) {
+        return enterpriseRepository.findById(enterpriseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enterprise không tồn tại"));
+    }
+
+    private static CreateCollectorResponse toResponse(Collector collector, Integer enterpriseId) {
+        Integer userId = collector.getUser() != null ? collector.getUser().getId() : null;
+        String phone = collector.getUser() != null ? collector.getUser().getPhone() : null;
+        return CreateCollectorResponse.builder()
+                .userId(userId)
+                .collectorId(collector.getId())
+                .enterpriseId(enterpriseId)
+                .email(collector.getEmail())
+                .fullName(collector.getFullName())
+                .phone(phone)
+                .employeeCode(collector.getEmployeeCode())
+                .status(collector.getStatus() != null ? collector.getStatus().name().toLowerCase() : null)
+                .vehicleType(collector.getVehicleType())
+                .vehiclePlate(collector.getVehiclePlate())
+                .violationCount(collector.getViolationCount())
+                .build();
     }
 }

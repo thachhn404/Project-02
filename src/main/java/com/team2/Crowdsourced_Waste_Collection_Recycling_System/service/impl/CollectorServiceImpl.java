@@ -3,6 +3,7 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorMonthlyCompletedCountResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorPerformanceStatsResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorTaskResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorTaskStatusCountResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorWorkHistoryItemResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
@@ -15,6 +16,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.colle
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionTrackingRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectorRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.CollectorService;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseAssignmentService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -35,6 +38,7 @@ public class CollectorServiceImpl implements CollectorService {
     private final CollectionTrackingRepository collectionTrackingRepository;
     private final CollectorRepository collectorRepository;
     private final WasteReportRepository wasteReportRepository;
+    private final EnterpriseAssignmentService enterpriseAssignmentService;
 
     @Override
     public List<CollectorTaskResponse> getTasks(Integer collectorId, String status, boolean all) {
@@ -51,10 +55,35 @@ public class CollectorServiceImpl implements CollectorService {
                 .id(t.getId())
                 .requestCode(t.getRequestCode())
                 .status(t.getStatus())
+                .address(t.getAddress())
                 .assignedAt(t.getAssignedAt())
                 .createdAt(t.getCreatedAt())
                 .updatedAt(t.getUpdatedAt())
                 .build()).getContent();
+    }
+
+    @Override
+    public List<CollectorTaskStatusCountResponse> getTaskStatusCounts(Integer collectorId) {
+        List<CollectionRequestRepository.CollectorTaskStatusCountView> rows =
+                collectionRequestRepository.countTasksByStatusForCollector(collectorId);
+
+        HashMap<String, Long> counts = new HashMap<>();
+        for (var row : rows) {
+            if (row == null || row.getStatus() == null) {
+                continue;
+            }
+            counts.put(row.getStatus(), row.getTotal() != null ? row.getTotal() : 0L);
+        }
+
+        List<CollectorTaskStatusCountResponse> result = new ArrayList<>();
+        for (var s : CollectionRequestStatus.values()) {
+            String key = s.name().toLowerCase();
+            result.add(CollectorTaskStatusCountResponse.builder()
+                    .status(key)
+                    .total(counts.getOrDefault(key, 0L))
+                    .build());
+        }
+        return result;
     }
 
     @Override
@@ -153,7 +182,7 @@ public class CollectorServiceImpl implements CollectorService {
     @Transactional
     /**
      * Từ chối task (chỉ khi assigned):
-     * - status -> accepted_enterprise
+     * - status -> reassign
      * - unassign collector
      */
     public void rejectTask(Integer requestId, Integer collectorId, String reason) {
@@ -165,8 +194,40 @@ public class CollectorServiceImpl implements CollectorService {
         if (updated == 0) {
             throwRejectError(requestId, collectorId);
         }
-        updateWasteReportStatusIfPresent(requestId, WasteReportStatus.ACCEPTED_ENTERPRISE, now);
+        updateWasteReportStatusIfPresent(requestId, WasteReportStatus.REASSIGN, now);
         logTracking(requestId, collectorId, "rejected", "Collector rejected task: " + reason);
+        autoAssignAnotherCollectorIfPossible(requestId, collectorId);
+    }
+
+    private void autoAssignAnotherCollectorIfPossible(Integer requestId, Integer rejectedCollectorId) {
+        CollectionRequest request = collectionRequestRepository.findById(requestId).orElse(null);
+        if (request == null || request.getEnterprise() == null || request.getEnterprise().getId() == null) {
+            return;
+        }
+        Integer enterpriseId = request.getEnterprise().getId();
+
+        var candidates = collectorRepository.findAvailableCollectors(enterpriseId);
+        Integer bestCollectorId = null;
+        long bestActive = Long.MAX_VALUE;
+        for (var c : candidates) {
+            if (c == null || c.getId() == null) {
+                continue;
+            }
+            if (rejectedCollectorId != null && c.getId().equals(rejectedCollectorId)) {
+                continue;
+            }
+            long active = collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ASSIGNED)
+                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ACCEPTED_COLLECTOR)
+                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ON_THE_WAY);
+            if (active < bestActive) {
+                bestActive = active;
+                bestCollectorId = c.getId();
+            }
+        }
+        if (bestCollectorId == null) {
+            return;
+        }
+        enterpriseAssignmentService.assignCollector(enterpriseId, requestId, bestCollectorId);
     }
 
     @Override

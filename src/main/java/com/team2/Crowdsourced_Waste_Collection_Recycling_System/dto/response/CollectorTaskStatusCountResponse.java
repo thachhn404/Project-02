@@ -7,19 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CollectorTaskResponse {
-    Integer id;
-    String requestCode;
+public class CollectorTaskStatusCountResponse {
     String status;
-    String address;
-    LocalDateTime assignedAt;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    Long total;
 }

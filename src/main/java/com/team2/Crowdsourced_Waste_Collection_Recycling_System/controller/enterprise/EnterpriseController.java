@@ -14,12 +14,10 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.Enterpri
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +29,7 @@ import java.util.List;
 @RequestMapping("/api/enterprise/requests")
 @RequiredArgsConstructor
 @Tag(name = "Enterprise Requests", description = "Luồng gán và điều phối Collector")
-public class EnterpriseController {
+public class EnterpriseController extends EnterpriseControllerSupport {
 
     private final EnterpriseAssignmentService enterpriseAssignmentService;
     private final EnterpriseRequestService enterpriseRequestService;
@@ -47,7 +45,19 @@ public class EnterpriseController {
         Integer enterpriseId = extractEnterpriseId(jwt);
         AssignCollectorResponse result = enterpriseAssignmentService.assignCollectorByReportCode(enterpriseId, reportCode,
                 request.getCollectorId());
-        return ApiResponse.<AssignCollectorResponse>builder().result(result).build();
+        return ok(result);
+    }
+
+    @PostMapping("/{requestId}/assign-collector")
+    @PreAuthorize("hasRole('ENTERPRISE')")
+    @Operation(summary = "Gán/Reassign Collector theo requestId", description = "Hỗ trợ request ở trạng thái ACCEPTED_ENTERPRISE hoặc REASSIGN")
+    public ApiResponse<AssignCollectorResponse> assignCollectorByRequestId(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer requestId,
+            @RequestBody AssignCollectorRequest request) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        AssignCollectorResponse result = enterpriseAssignmentService.assignCollector(enterpriseId, requestId, request.getCollectorId());
+        return ok(result);
     }
 
     @GetMapping("/{requestId}/eligible-collectors")
@@ -59,7 +69,7 @@ public class EnterpriseController {
             @RequestParam(name = "radiusKm", required = false) Double radiusKm) {
         Integer enterpriseId = extractEnterpriseId(jwt);
         List<EligibleCollectorResponse> result = enterpriseAssignmentService.findEligibleCollectors(enterpriseId, requestId, radiusKm);
-        return ApiResponse.<List<EligibleCollectorResponse>>builder().result(result).build();
+        return ok(result);
     }
 
     @GetMapping("/{requestId}/report-detail")
@@ -70,7 +80,7 @@ public class EnterpriseController {
             @PathVariable Integer requestId) {
         Integer enterpriseId = extractEnterpriseId(jwt);
         EnterpriseRequestReportDetailResponse result = enterpriseReportDetailService.getRequestReportDetail(enterpriseId, requestId);
-        return ApiResponse.<EnterpriseRequestReportDetailResponse>builder().result(result).build();
+        return ok(result);
     }
 
     /**
@@ -87,13 +97,11 @@ public class EnterpriseController {
         Integer collectionRequestId = enterpriseRequestService.acceptWasteReport(
                 enterpriseId, reportCode);
 
-        return ApiResponse.<CollectionRequestActionResponse>builder()
-                .result(CollectionRequestActionResponse.builder()
-                        .collectionRequestId(collectionRequestId)
-                        .status("accepted")
-                        .actionAt(LocalDateTime.now())
-                        .build())
-                .build();
+        return ok(CollectionRequestActionResponse.builder()
+                .collectionRequestId(collectionRequestId)
+                .status("accepted")
+                .actionAt(LocalDateTime.now())
+                .build());
     }
 
     @PostMapping("/reject/{reportCode}")
@@ -106,20 +114,6 @@ public class EnterpriseController {
         Integer enterpriseId = extractEnterpriseId(jwt);
         String reason = body != null ? body.getReason() : null;
         enterpriseRequestService.rejectWasteReport(enterpriseId, reportCode, reason);
-        return ApiResponse.<Void>builder().message("Rejected").build();
-    }
-
-    private Integer extractEnterpriseId(Jwt jwt) {
-        if (jwt == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Thiếu token");
-        }
-        Object value = jwt.getClaims().get("enterpriseId");
-        if (value == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "enterpriseId không hợp lệ");
+        return ok("Rejected");
     }
 }

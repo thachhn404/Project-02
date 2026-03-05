@@ -43,4 +43,6 @@ public class CreateCollectorReportRequest {
     @DecimalMin(value = "-180.0", message = "Kinh độ phải nằm trong khoảng [-180, 180]")
     @DecimalMax(value = "180.0", message = "Kinh độ phải nằm trong khoảng [-180, 180]")
     Double longitude;
+
+    Integer verificationRate;
 }

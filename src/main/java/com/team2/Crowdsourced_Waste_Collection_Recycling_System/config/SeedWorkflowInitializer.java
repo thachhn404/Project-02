@@ -4,7 +4,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorReportStatus;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.PointRuleRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.*;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.feedback.FeedbackRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.profile.CitizenRepository;
@@ -30,7 +29,6 @@ public class SeedWorkflowInitializer {
             CollectionRequestRepository collectionRequestRepository,
             CollectionTrackingRepository collectionTrackingRepository,
             CollectorReportRepository collectorReportRepository,
-            PointRuleRepository pointRuleRepository,
             FeedbackRepository feedbackRepository
     ) {
         return args -> {

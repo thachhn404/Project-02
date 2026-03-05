@@ -20,6 +20,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     
     List<PointTransaction> findByReportId(Integer reportId);
     boolean existsByCollectionRequestId(Integer collectionRequestId);
+    boolean existsByCollectionRequestIdAndTransactionType(Integer collectionRequestId, String transactionType);
     boolean existsByReportId(Integer reportId);
     
     @Query("SELECT pt FROM PointTransaction pt WHERE pt.citizen.id = :citizenId ORDER BY pt.createdAt DESC")
@@ -55,8 +56,5 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate
     );
-    
-    @Query("SELECT pt FROM PointTransaction pt WHERE pt.rule.id = :ruleId")
-    List<PointTransaction> findByPointRuleId(@Param("ruleId") Integer ruleId);
 }
 

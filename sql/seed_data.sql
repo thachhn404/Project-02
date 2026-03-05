@@ -364,19 +364,10 @@ BEGIN
     (@collectorReportId, @catCanId, 2, 'CAN', 180.0000, 360, DATEADD(HOUR, -1, @now));
 END
 
-DECLARE @ruleId INT;
-SELECT @ruleId = id FROM point_rules WHERE enterprise_id = @enterpriseId AND rule_name = N'Demo base';
-IF @ruleId IS NULL
-BEGIN
-    INSERT INTO point_rules (enterprise_id, rule_name, rule_type, min_weight_kg, max_weight_kg, min_quality_rating, max_processing_hours, base_points, multiplier, is_active, valid_from, valid_to, priority, created_at, updated_at)
-    VALUES (@enterpriseId, N'Demo base', 'BASE', 0.00, NULL, NULL, NULL, 20, 1.00, 1, DATEADD(DAY, -30, @now), NULL, 1, @now, @now);
-    SET @ruleId = SCOPE_IDENTITY();
-END
-
 IF @cr2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM point_transactions WHERE citizen_id = @citizenId2 AND collection_request_id = @cr2 AND transaction_type = 'EARN')
 BEGIN
-    INSERT INTO point_transactions (citizen_id, report_id, collection_request_id, rule_id, points, transaction_type, description, balance_after, created_by, created_at)
-    VALUES (@citizenId2, @wr2, @cr2, @ruleId, 5000, 'EARN', N'Điểm thưởng thu gom demo', 5000, @adminUserId, DATEADD(HOUR, -1, @now));
+    INSERT INTO point_transactions (citizen_id, report_id, collection_request_id, points, transaction_type, description, balance_after, created_by, created_at)
+    VALUES (@citizenId2, @wr2, @cr2, 5000, 'EARN', N'Điểm thưởng thu gom demo', 5000, @adminUserId, DATEADD(HOUR, -1, @now));
 END
 
 IF NOT EXISTS (SELECT 1 FROM feedbacks WHERE feedback_code = 'FB-DEMO-001')

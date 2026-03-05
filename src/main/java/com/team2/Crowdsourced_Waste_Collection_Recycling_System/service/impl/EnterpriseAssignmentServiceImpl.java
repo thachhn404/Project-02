@@ -3,6 +3,7 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AssignCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EligibleCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.RequestPreviewResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Collector;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.CollectionRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus;
@@ -39,49 +40,17 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     @Override
     @Transactional
     public AssignCollectorResponse assignCollector(Integer enterpriseId, Integer requestId, Integer collectorId) {
-        if (enterpriseId == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        if (requestId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu request_id");
-        }
-        if (collectorId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu collector_id");
-        }
+        requireEnterpriseId(enterpriseId);
+        requireRequestId(requestId);
+        requireCollectorId(collectorId);
 
-        var collector = collectorRepository.findById(collectorId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collector không tồn tại"));
-
-        if (collector.getEnterprise() == null || collector.getEnterprise().getId() == null
-                || !collector.getEnterprise().getId().equals(enterpriseId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collector không thuộc doanh nghiệp");
-        }
-
-        if (collector.getStatus() == null
-                || (collector.getStatus() != CollectorStatus.ACTIVE
-                        && collector.getStatus() != CollectorStatus.AVAILABLE)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Collector không ở trạng thái active hoặc available");
-        }
+        Collector collector = requireEnterpriseCollector(enterpriseId, collectorId);
+        validateCollectorAssignable(collector);
 
         LocalDateTime now = LocalDateTime.now();
         int updated = collectionRequestRepository.assignCollector(requestId, collectorId, enterpriseId);
         if (updated == 0) {
-            CollectionRequest request = collectionRequestRepository.findById(requestId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Collection Request không tồn tại"));
-            if (request.getEnterprise() == null || request.getEnterprise().getId() == null
-                    || !request.getEnterprise().getId().equals(enterpriseId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collection Request không thuộc doanh nghiệp");
-            }
-            if (request.getCollector() != null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collection Request đã được gán collector");
-            }
-            if (request.getStatus() != CollectionRequestStatus.ACCEPTED_ENTERPRISE) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Collection Request không ở trạng thái hợp lệ để phân công (ACCEPTED_ENTERPRISE)");
-            }
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể phân công Collection Request");
+            throw explainAssignFailure(enterpriseId, requestId);
         }
 
         CollectionRequest request = collectionRequestRepository.findById(requestId)
@@ -116,26 +85,13 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     @Override
     @Transactional
     public AssignCollectorResponse assignCollectorByReportCode(Integer enterpriseId, String reportCode, Integer collectorId) {
-        if (enterpriseId == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        if (reportCode == null || reportCode.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu report_code");
-        }
-        if (collectorId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu collector_id");
-        }
-        var collector = collectorRepository.findById(collectorId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collector không tồn tại"));
-        if (collector.getEnterprise() == null || collector.getEnterprise().getId() == null
-                || !collector.getEnterprise().getId().equals(enterpriseId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collector không thuộc doanh nghiệp");
-        }
-        if (collector.getStatus() == null
-                || (collector.getStatus() != CollectorStatus.ACTIVE
-                && collector.getStatus() != CollectorStatus.AVAILABLE)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collector không ở trạng thái active hoặc available");
-        }
+        requireEnterpriseId(enterpriseId);
+        requireReportCode(reportCode);
+        requireCollectorId(collectorId);
+
+        Collector collector = requireEnterpriseCollector(enterpriseId, collectorId);
+        validateCollectorAssignable(collector);
+
         var report = wasteReportRepository.findByReportCode(reportCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Waste Report không tồn tại"));
         var existing = collectionRequestRepository.findByReport_Id(report.getId());
@@ -151,22 +107,14 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     @Override
     @Transactional(readOnly = true)
     public List<EligibleCollectorResponse> findEligibleCollectors(Integer enterpriseId, Integer requestId, Double radiusKm) {
-        if (enterpriseId == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        if (requestId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu request_id");
-        }
+        requireEnterpriseId(enterpriseId);
+        requireRequestId(requestId);
 
-        CollectionRequest request = collectionRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"));
-
-        if (request.getEnterprise() == null || request.getEnterprise().getId() == null
-                || !request.getEnterprise().getId().equals(enterpriseId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collection Request không thuộc doanh nghiệp");
-        }
-        if (request.getStatus() != CollectionRequestStatus.ACCEPTED_ENTERPRISE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ hỗ trợ tìm collector khi request ở trạng thái ACCEPTED_ENTERPRISE");
+        CollectionRequest request = requireEnterpriseRequest(enterpriseId, requestId);
+        if (request.getStatus() != CollectionRequestStatus.ACCEPTED_ENTERPRISE
+                && request.getStatus() != CollectionRequestStatus.REASSIGN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Chỉ hỗ trợ tìm collector khi request ở trạng thái ACCEPTED_ENTERPRISE/REASSIGN");
         }
 
         var collectors = collectorRepository.findByEnterprise_IdOrderByCreatedAtDesc(enterpriseId);
@@ -201,18 +149,9 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     @Override
     @Transactional(readOnly = true)
     public RequestPreviewResponse getRequestPreview(Integer enterpriseId, Integer requestId) {
-        if (enterpriseId == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        if (requestId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu request_id");
-        }
-        CollectionRequest request = collectionRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"));
-        if (request.getEnterprise() == null || request.getEnterprise().getId() == null
-                || !request.getEnterprise().getId().equals(enterpriseId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collection Request không thuộc doanh nghiệp");
-        }
+        requireEnterpriseId(enterpriseId);
+        requireRequestId(requestId);
+        CollectionRequest request = requireEnterpriseRequest(enterpriseId, requestId);
         WasteReport report = request.getReport();
         LocalDateTime created = request.getCreatedAt();
         int sla = computeSlaHours(report != null ? report.getWasteType() : null);
@@ -246,6 +185,70 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
             case "RECYCLABLE" -> 72;
             default -> 72;
         };
+    }
+
+    private static void requireEnterpriseId(Integer enterpriseId) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+    }
+
+    private static void requireRequestId(Integer requestId) {
+        if (requestId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu request_id");
+        }
+    }
+
+    private static void requireCollectorId(Integer collectorId) {
+        if (collectorId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu collector_id");
+        }
+    }
+
+    private static void requireReportCode(String reportCode) {
+        if (reportCode == null || reportCode.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu report_code");
+        }
+    }
+
+    private Collector requireEnterpriseCollector(Integer enterpriseId, Integer collectorId) {
+        Collector collector = collectorRepository.findById(collectorId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collector không tồn tại"));
+        if (collector.getEnterprise() == null || collector.getEnterprise().getId() == null
+                || !collector.getEnterprise().getId().equals(enterpriseId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collector không thuộc doanh nghiệp");
+        }
+        return collector;
+    }
+
+    private static void validateCollectorAssignable(Collector collector) {
+        if (collector.getStatus() == null
+                || (collector.getStatus() != CollectorStatus.ACTIVE && collector.getStatus() != CollectorStatus.AVAILABLE)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collector không ở trạng thái active hoặc available");
+        }
+    }
+
+    private CollectionRequest requireEnterpriseRequest(Integer enterpriseId, Integer requestId) {
+        CollectionRequest request = collectionRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"));
+        if (request.getEnterprise() == null || request.getEnterprise().getId() == null
+                || !request.getEnterprise().getId().equals(enterpriseId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Collection Request không thuộc doanh nghiệp");
+        }
+        return request;
+    }
+
+    private ResponseStatusException explainAssignFailure(Integer enterpriseId, Integer requestId) {
+        CollectionRequest request = requireEnterpriseRequest(enterpriseId, requestId);
+        if (request.getCollector() != null) {
+            return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collection Request đã được gán collector");
+        }
+        if (request.getStatus() != CollectionRequestStatus.ACCEPTED_ENTERPRISE
+                && request.getStatus() != CollectionRequestStatus.REASSIGN) {
+            return new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Collection Request không ở trạng thái hợp lệ để phân công (ACCEPTED_ENTERPRISE/REASSIGN)");
+        }
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể phân công Collection Request");
     }
 
 }

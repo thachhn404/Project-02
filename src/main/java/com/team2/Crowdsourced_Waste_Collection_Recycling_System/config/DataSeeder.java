@@ -11,7 +11,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorR
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Enterprise;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Feedback;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Permission;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.PointRule;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.PointTransaction;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportImage;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.Role;
@@ -36,7 +35,6 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authe
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.authentication.UserRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.feedback.FeedbackRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.reward.PointTransactionRepository;
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.PointRuleRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -65,7 +63,6 @@ public class DataSeeder {
             CollectorReportRepository collectorReportRepository,
             PermissionRepository permissionRepository,
             RolePermissionRepository rolePermissionRepository,
-            PointRuleRepository pointRuleRepository,
             PointTransactionRepository pointTransactionRepository,
             FeedbackRepository feedbackRepository,
             PasswordEncoder passwordEncoder) {
@@ -162,7 +159,6 @@ public class DataSeeder {
                     collectionRequestRepository,
                     collectionTrackingRepository,
                     collectorReportRepository,
-                    pointRuleRepository,
                     pointTransactionRepository,
                     feedbackRepository);
         };
@@ -325,7 +321,6 @@ public class DataSeeder {
             CollectionRequestRepository collectionRequestRepository,
             CollectionTrackingRepository collectionTrackingRepository,
             CollectorReportRepository collectorReportRepository,
-            PointRuleRepository pointRuleRepository,
             PointTransactionRepository pointTransactionRepository,
             FeedbackRepository feedbackRepository) {
         if (citizen == null || citizen.getId() == null
@@ -390,8 +385,7 @@ public class DataSeeder {
         ensureCollectorReportIfMissing(collectorReportRepository, cr5, collector2,
                 now.minusDays(1).plusHours(5));
 
-        PointRule rule = ensurePointRule(pointRuleRepository, enterprise, now.minusDays(30));
-        ensurePointTransaction(pointTransactionRepository, citizen, r5, cr5, rule, now.minusDays(1).plusHours(5));
+        ensurePointTransaction(pointTransactionRepository, citizen, r5, cr5, now.minusDays(1).plusHours(5));
 
         ensureFeedback(feedbackRepository, citizen, cr5, now.minusDays(1).plusHours(6));
 
@@ -505,24 +499,8 @@ public class DataSeeder {
         reportRepository.save(report);
     }
 
-    private PointRule ensurePointRule(PointRuleRepository repo, Enterprise enterprise, LocalDateTime createdAt) {
-        return repo.findByEnterpriseIdAndRuleName(enterprise.getId(), "Seed rule").orElseGet(() -> {
-            PointRule rule = new PointRule();
-            rule.setEnterprise(enterprise);
-            rule.setRuleName("Seed rule");
-            rule.setRuleType("BASE");
-            rule.setBasePoints(50);
-            rule.setMultiplier(new BigDecimal("1.00"));
-            rule.setIsActive(true);
-            rule.setValidFrom(createdAt);
-            rule.setCreatedAt(createdAt);
-            rule.setUpdatedAt(createdAt);
-            return repo.save(rule);
-        });
-    }
-
     private void ensurePointTransaction(PointTransactionRepository repo, Citizen citizen, WasteReport report,
-            CollectionRequest request, PointRule rule, LocalDateTime createdAt) {
+            CollectionRequest request, LocalDateTime createdAt) {
         if (report == null || report.getId() == null) {
             return;
         }
@@ -533,7 +511,6 @@ public class DataSeeder {
         tx.setCitizen(citizen);
         tx.setReport(report);
         tx.setCollectionRequest(request);
-        tx.setRule(rule);
         tx.setPoints(50);
         tx.setTransactionType("EARN");
         tx.setDescription("Seed points");

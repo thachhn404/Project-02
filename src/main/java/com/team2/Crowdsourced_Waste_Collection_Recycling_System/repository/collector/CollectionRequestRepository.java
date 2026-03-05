@@ -17,9 +17,7 @@ import java.util.Optional;
 
 @Repository
 public interface CollectionRequestRepository extends JpaRepository<CollectionRequest, Integer> {
-    /**
-     * Projection trả về danh sách task của collector (ẩn dữ liệu citizen).
-     */
+
     interface CollectorTaskView {
         Integer getId();
 
@@ -27,11 +25,19 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
 
         String getStatus();
 
+        String getAddress();
+
         java.time.LocalDateTime getAssignedAt();
 
         java.time.LocalDateTime getCreatedAt();
 
         java.time.LocalDateTime getUpdatedAt();
+    }
+
+    interface CollectorTaskStatusCountView {
+        String getStatus();
+
+        Long getTotal();
     }
 
     List<CollectionRequest> findByEnterprise_Id(Integer enterpriseId);
@@ -93,7 +99,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                 WHERE id = :requestId
                   AND enterprise_id = :enterpriseId
                   AND collector_id IS NULL
-                  AND status = 'accepted_enterprise'
+                  AND status IN ('accepted_enterprise', 'reassign')
             """, nativeQuery = true)
     int assignCollector(
             @Param("requestId") Integer requestId,
@@ -116,7 +122,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                 WHERE request_code = :requestCode
                   AND enterprise_id = :enterpriseId
                   AND collector_id IS NULL
-                  AND status = 'accepted_enterprise'
+                  AND status IN ('accepted_enterprise', 'reassign')
             """, nativeQuery = true)
     int assignCollectorByRequestCode(
             @Param("requestCode") String requestCode,
@@ -128,10 +134,12 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.id AS id,
                     cr.request_code AS requestCode,
                     cr.status AS status,
+                    wr.address AS address,
                     cr.assigned_at AS assignedAt,
                     cr.created_at AS createdAt,
                     cr.updated_at AS updatedAt
                 FROM collection_requests cr
+                LEFT JOIN waste_reports wr ON cr.report_id = wr.id
                 WHERE cr.collector_id = :collectorId
                 ORDER BY
                     CASE WHEN cr.assigned_at IS NULL THEN 1 ELSE 0 END,
@@ -148,10 +156,12 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.id AS id,
                     cr.request_code AS requestCode,
                     cr.status AS status,
+                    wr.address AS address,
                     cr.assigned_at AS assignedAt,
                     cr.created_at AS createdAt,
                     cr.updated_at AS updatedAt
                 FROM collection_requests cr
+                LEFT JOIN waste_reports wr ON cr.report_id = wr.id
                 WHERE cr.collector_id = :collectorId
                   AND cr.status = :status
                 ORDER BY
@@ -173,10 +183,12 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.id AS id,
                     cr.request_code AS requestCode,
                     cr.status AS status,
+                    wr.address AS address,
                     cr.assigned_at AS assignedAt,
                     cr.created_at AS createdAt,
                     cr.updated_at AS updatedAt
                 FROM collection_requests cr
+                LEFT JOIN waste_reports wr ON cr.report_id = wr.id
                 WHERE cr.collector_id = :collectorId
                   AND cr.status IN ('assigned', 'accepted_collector', 'on_the_way', 'collected')
                 ORDER BY
@@ -185,6 +197,16 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
                     cr.id DESC
             """, nativeQuery = true)
     Page<CollectorTaskView> findActiveTasksForCollector(@Param("collectorId") Integer collectorId, Pageable pageable);
+
+    @Query(value = """
+                SELECT
+                    cr.status AS status,
+                    COUNT(*) AS total
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                GROUP BY cr.status
+            """, nativeQuery = true)
+    List<CollectorTaskStatusCountView> countTasksByStatusForCollector(@Param("collectorId") Integer collectorId);
 
     interface CollectorWorkHistoryView {
         Integer getId();
@@ -333,12 +355,11 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     /**
      * Từ chối nhiệm vụ theo hướng atomic:
      * - Chỉ khi request đang assigned và thuộc collector hiện tại
-     * - Set status = accepted_enterprise, lưu lý do, và unassign collector để
-     * enterprise gán lại
+     * - Set status = reassign, lưu lý do, và unassign collector để enterprise gán lại
      */
     @Modifying
     @Query("update CollectionRequest cr " +
-            "set cr.status = 'accepted_enterprise'," +
+            "set cr.status = 'reassign'," +
             "cr.rejectionReason =:reason," +
             "cr.collector = null," +
             "cr.acceptedAt = null," +

@@ -7,6 +7,8 @@ public enum CollectionRequestStatus {
     //enterpris chap nhan nhung chua phan cong
     ACCEPTED_ENTERPRISE,
 
+    REASSIGN,
+
 //enterprise phan cong cho collector accept
     ASSIGNED,
 //collector chap nhan va chuan  bi chuyen trang thai on the way

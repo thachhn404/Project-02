@@ -43,12 +43,7 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
         }
         WasteReport wasteReport = wasteReportRepository.findByReportCode(reportCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Waste Report không tồn tại"));
-
-        if (enterpriseId == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
-        }
-        Enterprise enterprise = enterpriseRepository.findById(enterpriseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enterprise không tồn tại"));
+        Enterprise enterprise = requireEnterprise(enterpriseId);
 
         // Idempotent behavior:
         // - If PENDING: accept and create CollectionRequest
@@ -165,5 +160,13 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
                 .anyMatch(lowerAddress::contains);
 
         return wardOk && cityOk;
+    }
+
+    private Enterprise requireEnterprise(Integer enterpriseId) {
+        if (enterpriseId == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User hiện tại không phải Enterprise");
+        }
+        return enterpriseRepository.findById(enterpriseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enterprise không tồn tại"));
     }
 }
