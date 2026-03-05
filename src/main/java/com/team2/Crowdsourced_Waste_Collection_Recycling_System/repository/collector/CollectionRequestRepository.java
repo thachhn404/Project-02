@@ -242,6 +242,24 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
         Long getTotal();
     }
 
+    interface AdminMonthlyCollectedWeightView {
+        Integer getYear();
+
+        Integer getMonth();
+
+        BigDecimal getTotalWeightKg();
+    }
+
+    interface AdminDailyCollectedWeightView {
+        Integer getYear();
+
+        Integer getMonth();
+
+        Integer getDay();
+
+        BigDecimal getTotalWeightKg();
+    }
+
     @Query(value = """
                 SELECT
                     cr.id AS id,
@@ -313,6 +331,67 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
     List<CollectorMonthlyCompletedCountView> countCompletedByMonth(
             @Param("collectorId") Integer collectorId,
             @Param("year") Integer year);
+
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS year,
+                    MONTH(COALESCE(cr.completed_at, cr.collected_at)) AS month,
+                    COALESCE(SUM(cr.actual_weight_kg), 0) AS totalWeightKg
+                FROM collection_requests cr
+                WHERE cr.status = 'completed'
+                  AND cr.actual_weight_kg IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND YEAR(COALESCE(cr.completed_at, cr.collected_at)) = :year
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)), MONTH(COALESCE(cr.completed_at, cr.collected_at))
+                ORDER BY year ASC, month ASC
+            """, nativeQuery = true)
+    List<AdminMonthlyCollectedWeightView> sumActualWeightByMonthForYear(@Param("year") Integer year);
+
+    @Query(value = """
+                SELECT
+                    COALESCE(SUM(cr.actual_weight_kg), 0)
+                FROM collection_requests cr
+                WHERE cr.status = 'completed'
+                  AND cr.actual_weight_kg IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND YEAR(COALESCE(cr.completed_at, cr.collected_at)) = :year
+            """, nativeQuery = true)
+    BigDecimal sumActualWeightForYear(@Param("year") Integer year);
+
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS year,
+                    MONTH(COALESCE(cr.completed_at, cr.collected_at)) AS month,
+                    DAY(COALESCE(cr.completed_at, cr.collected_at)) AS day,
+                    COALESCE(SUM(cr.actual_weight_kg), 0) AS totalWeightKg
+                FROM collection_requests cr
+                WHERE cr.status = 'completed'
+                  AND cr.actual_weight_kg IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND YEAR(COALESCE(cr.completed_at, cr.collected_at)) = :year
+                  AND MONTH(COALESCE(cr.completed_at, cr.collected_at)) = :month
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)),
+                         MONTH(COALESCE(cr.completed_at, cr.collected_at)),
+                         DAY(COALESCE(cr.completed_at, cr.collected_at))
+                ORDER BY day ASC
+            """, nativeQuery = true)
+    List<AdminDailyCollectedWeightView> sumActualWeightByDayForMonth(
+            @Param("year") Integer year,
+            @Param("month") Integer month);
+
+    @Query(value = """
+                SELECT
+                    COALESCE(SUM(cr.actual_weight_kg), 0)
+                FROM collection_requests cr
+                WHERE cr.status = 'completed'
+                  AND cr.actual_weight_kg IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND YEAR(COALESCE(cr.completed_at, cr.collected_at)) = :year
+                  AND MONTH(COALESCE(cr.completed_at, cr.collected_at)) = :month
+            """, nativeQuery = true)
+    BigDecimal sumActualWeightForMonth(
+            @Param("year") Integer year,
+            @Param("month") Integer month);
 
     Optional<CollectionRequest> findByIdAndCollector_Id(Integer id, Integer collectorId);
 
