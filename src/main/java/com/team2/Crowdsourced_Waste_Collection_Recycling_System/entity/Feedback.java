@@ -59,9 +59,6 @@ public class Feedback {
     @Column(name = "status", length = 20)
     private String status;
 
-    @Column(name = "image_url", columnDefinition = "NVARCHAR(MAX)")
-    private String imageUrl;
-
     @Column(name = "rating")
     private Integer rating;
 

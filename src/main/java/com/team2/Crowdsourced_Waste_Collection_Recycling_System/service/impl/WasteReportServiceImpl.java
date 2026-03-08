@@ -594,24 +594,12 @@ public class WasteReportServiceImpl implements WasteReportService {
             }
         }
 
-        // Upload ảnh bằng chứng
-        String imageUrl = null;
-        if (request.getEvidenceImage() != null && !request.getEvidenceImage().isEmpty()) {
-            CloudinaryResponse uploaded = cloudinaryService.uploadImage(request.getEvidenceImage(), "feedbacks");
-            if (uploaded != null) {
-                imageUrl = uploaded.getUrl();
-            }
-        }
-
-
-
         Feedback feedback = citizenFeatureMapper.toFeedback(request);
         feedback.setCitizen(citizen);
         
         // Tạo mã tạm thời để pass constraint
         feedback.setFeedbackCode("TEMP-" + System.nanoTime());
         feedback.setCollectionRequest(collectionRequest);
-        feedback.setImageUrl(imageUrl);
         
         Feedback saved = feedbackRepository.save(feedback);
         

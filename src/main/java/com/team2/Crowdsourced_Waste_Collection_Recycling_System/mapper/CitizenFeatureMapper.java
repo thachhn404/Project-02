@@ -39,7 +39,6 @@ public interface CitizenFeatureMapper {
     @Mapping(target = "subject", expression = "java(\"Complaint for Report #\" + request.getReportId() + \" - \" + request.getType())")
     @Mapping(target = "content", source = "content")
     @Mapping(target = "feedbackType", source = "type")
-    @Mapping(target = "imageUrl", ignore = true)
     @Mapping(target = "rating", source = "rating")
     @Mapping(target = "resolution", ignore = true)
     Feedback toFeedback(CreateComplaintRequest request);
