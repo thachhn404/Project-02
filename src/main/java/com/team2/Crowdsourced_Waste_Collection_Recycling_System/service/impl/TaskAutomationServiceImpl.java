@@ -52,17 +52,10 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
                         "Quá hạn nhận việc: chưa nhận việc trong " + acceptTimeoutHours + " giờ");
             }
 
-            if (!isWithinWorkingHours(now)) {
-                unassignToEnterprise(request, now,
-                        "Tự động hủy phân công: ngoài giờ làm việc, chưa nhận việc trong " + acceptTimeoutHours + " giờ");
-                continue;
-            }
-
-            boolean reassigned = reassignTask(request, now);
-            if (!reassigned) {
-                unassignToEnterprise(request, now,
-                        "Tự động hủy phân công: không tìm thấy collector phù hợp để tái phân công sau " + acceptTimeoutHours + " giờ");
-            }
+            unassignToEnterprise(request, now,
+                    isWithinWorkingHours(now)
+                            ? "Tự động hủy phân công: quá hạn nhận việc, cần Enterprise gán lại"
+                            : "Tự động hủy phân công: ngoài giờ làm việc, cần Enterprise gán lại");
         }
     }
 
@@ -80,43 +73,6 @@ public class TaskAutomationServiceImpl implements TaskAutomationService {
             }
             log.info("Task {} violated SLA > {}h.", request.getRequestCode(), slaHours);
             processSlaViolation(request);
-        }
-    }
-
-    private boolean reassignTask(CollectionRequest request, LocalDateTime now) {
-        Collector currentCollector = request.getCollector();
-        List<Collector> availableCollectors = collectorRepository.findAvailableCollectors(request.getEnterprise().getId());
-
-        Collector bestCollector = null;
-        long bestActiveTasks = Long.MAX_VALUE;
-
-        for (Collector c : availableCollectors) {
-            if (currentCollector != null && c.getId().equals(currentCollector.getId())) {
-                continue;
-            }
-            long active = collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ASSIGNED)
-                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ACCEPTED_COLLECTOR)
-                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ON_THE_WAY);
-            if (active < bestActiveTasks) {
-                bestActiveTasks = active;
-                bestCollector = c;
-            }
-        }
-
-        if (bestCollector != null) {
-            request.setCollector(bestCollector);
-            request.setAssignedAt(now);
-            request.setUpdatedAt(now);
-            request.setRejectionReason(null);
-            request.setStatus(CollectionRequestStatus.ASSIGNED);
-            collectionRequestRepository.save(request);
-            log.info("Reassigned task {} to collector {}", request.getRequestCode(), bestCollector.getId());
-            logTracking(request.getId(), bestCollector.getId(), "reassigned",
-                    "Tự động tái phân công");
-            return true;
-        } else {
-            log.warn("No eligible collector found for reassignment of task {}", request.getRequestCode());
-            return false;
         }
     }
 
