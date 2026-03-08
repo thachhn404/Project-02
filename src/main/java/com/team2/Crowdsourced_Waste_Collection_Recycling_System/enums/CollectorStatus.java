@@ -1,27 +1,28 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums;
 
 public enum CollectorStatus {
-  //Co the nhan nhiem vu moi
-    AVAILABLE,
+    // Đang online, sẵn sàng nhận nhiệm vụ
+    ONLINE,
 
-    //dang lam viec , san sang nhan nhiem vu
-    ACTIVE,
+    // Đang offline, không thể nhận nhiệm vụ
+    OFFLINE,
 
-    //tam nghi khong nhan nhiem vu
-    INACTIVE,
-
-    //dinh chi do vi pham
+    // Bị đình chỉ
     SUSPEND;
 
- //kiem tra collector co nhan nhiem vu khong
+    // Kiểm tra collector có thể nhận nhiệm vụ không
     public boolean canAcceptTask() {
-        return this == AVAILABLE || this == ACTIVE;
+        return this == ONLINE;
     }
 
-//chuyen doi string sang enum
+    // Chuyển đổi string sang enum
     public static CollectorStatus fromString(String status) {
         if (status == null)
             return null;
-        return CollectorStatus.valueOf(status.toUpperCase());
+        try {
+            return CollectorStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

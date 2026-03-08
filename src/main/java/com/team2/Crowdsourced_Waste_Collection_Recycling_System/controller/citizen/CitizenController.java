@@ -4,6 +4,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.Crea
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.UpdateWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenLeaderboardResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenPointSummaryResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenReportResultResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateComplaintRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse;
@@ -35,12 +36,22 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenReportStatsResponse;
+
 @RestController
 @RequestMapping("/api/citizen")
 @RequiredArgsConstructor
 @Tag(name = "Citizen", description = "Tác vụ của công dân: báo cáo rác, khiếu nại, thưởng")
 public class CitizenController {
     private final WasteReportService wasteReportService;
+
+    @GetMapping("/reports/stats")
+    @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Thống kê báo cáo", description = "Thống kê số lượng báo cáo theo trạng thái và khối lượng rác theo loại")
+    public ResponseEntity<ApiResponse<CitizenReportStatsResponse>> getMyReportStats() {
+        CitizenReportStatsResponse stats = wasteReportService.getMyReportStats(currentEmail());
+        return ok(stats, "Lấy thống kê báo cáo thành công");
+    }
 
     @PostMapping(value = "/reports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('CITIZEN')")
@@ -105,19 +116,31 @@ public class CitizenController {
     @GetMapping("/leaderboard")
     @Operation(summary = "Bảng xếp hạng công dân", description = "Xếp hạng theo điểm, hỗ trợ lọc theo khu vực")
     public ResponseEntity<ApiResponse<List<CitizenLeaderboardResponse>>> getLeaderboard(
-            @RequestParam(required = false) String region) {
-        List<CitizenLeaderboardResponse> leaderboard = wasteReportService.getLeaderboard(region);
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false, defaultValue = "50") Integer limit) {
+        List<CitizenLeaderboardResponse> leaderboard = wasteReportService.getLeaderboard(region, limit);
         return ResponseEntity.ok(ApiResponse.<List<CitizenLeaderboardResponse>>builder()
                 .result(leaderboard)
                 .message("Lấy bảng xếp hạng thành công")
                 .build());
     }
 
-    @PostMapping("/complaints")
+    @GetMapping("/points/summary")
+    @PreAuthorize("hasRole('CITIZEN')")
+    @Operation(summary = "Thống kê điểm của tôi", description = "Thống kê điểm thưởng theo tháng/quý/năm tùy chọn")
+    public ResponseEntity<ApiResponse<CitizenPointSummaryResponse>> getMyPointSummary(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer quarter,
+            @RequestParam(required = false) Integer month) {
+        CitizenPointSummaryResponse summary = wasteReportService.getMyPointSummary(currentEmail(), year, quarter, month);
+        return ok(summary, "Lấy thống kê điểm thành công");
+    }
+
+    @PostMapping(value = "/complaints", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('CITIZEN')")
     @Operation(summary = "Tạo khiếu nại", description = "Gửi khiếu nại liên quan đến thu gom")
     public ResponseEntity<ApiResponse<ComplaintResponse>> createComplaint(
-            @Valid @RequestBody CreateComplaintRequest request) {
+            @Valid @ModelAttribute CreateComplaintRequest request) {
         ComplaintResponse response = wasteReportService.createComplaint(request, currentEmail());
         return ok(response, "Tạo khiếu nại thành công");
     }

@@ -40,24 +40,50 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     @Override
     @Transactional
     public AssignCollectorResponse assignCollector(Integer enterpriseId, Integer requestId, Integer collectorId) {
+        // Kiểm tra thông tin đầu vào
         requireEnterpriseId(enterpriseId);
         requireRequestId(requestId);
         requireCollectorId(collectorId);
 
+        // Kiểm tra collector có thuộc enterprise và đang active không
         Collector collector = requireEnterpriseCollector(enterpriseId, collectorId);
         validateCollectorAssignable(collector);
 
+        // Kiểm tra request
+        CollectionRequest requestBeforeAssign = requireEnterpriseRequest(enterpriseId, requestId);
+        
+        // Nếu request đang ở trạng thái REASSIGN, không được gán lại cho người vừa từ chối
+        if (requestBeforeAssign.getStatus() == CollectionRequestStatus.REASSIGN) {
+            var tracking = collectionTrackingRepository
+                    .findFirstByCollectionRequest_IdAndActionOrderByCreatedAtDesc(requestId, "rejected")
+                    .orElse(null);
+            
+            if (tracking != null && tracking.getCollector() != null) {
+                Integer lastRejectedCollectorId = tracking.getCollector().getId();
+                if (lastRejectedCollectorId.equals(collectorId)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Không thể gán lại cho collector vừa từ chối nhiệm vụ");
+                }
+            }
+        }
+
+        // Thực hiện cập nhật DB để gán collector
         LocalDateTime now = LocalDateTime.now();
         int updated = collectionRequestRepository.assignCollector(requestId, collectorId, enterpriseId);
+        
+        // Nếu cập nhật thất bại (không có dòng nào thay đổi), ném lỗi
         if (updated == 0) {
             throw explainAssignFailure(enterpriseId, requestId);
         }
 
+        // Lấy lại request sau khi cập nhật để xử lý tiếp
         CollectionRequest request = collectionRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection Request không tồn tại"));
 
         Integer collectionRequestId = request.getId();
         WasteReport report = request.getReport();
+        
+        // Cập nhật trạng thái báo cáo rác thành ASSIGNED
         if (report == null) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Collection Request thiếu report_id, không thể cập nhật WasteReport");
@@ -66,6 +92,7 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         report.setUpdatedAt(now);
         wasteReportRepository.saveAndFlush(report);
 
+        // Lưu lịch sử (tracking)
         CollectionTracking tracking = new CollectionTracking();
         tracking.setCollectionRequest(collectionRequestRepository.getReferenceById(collectionRequestId));
         tracking.setCollector(collector);
@@ -74,12 +101,13 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
         tracking.setCreatedAt(now);
         collectionTrackingRepository.save(tracking);
 
-        return AssignCollectorResponse.builder()
-                .collectionRequestId(collectionRequestId)
-                .collectorId(collector.getId())
-                .status("assigned")
-                .assignedAt(now)
-                .build();
+        // Trả về kết quả
+        AssignCollectorResponse response = new AssignCollectorResponse();
+        response.setCollectionRequestId(collectionRequestId);
+        response.setCollectorId(collector.getId());
+        response.setStatus("assigned");
+        response.setAssignedAt(now);
+        return response;
     }
 
     @Override
@@ -107,43 +135,89 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     @Override
     @Transactional(readOnly = true)
     public List<EligibleCollectorResponse> findEligibleCollectors(Integer enterpriseId, Integer requestId, Double radiusKm) {
+        // Kiểm tra thông tin đầu vào
         requireEnterpriseId(enterpriseId);
         requireRequestId(requestId);
 
+        // Lấy thông tin request và kiểm tra trạng thái
         CollectionRequest request = requireEnterpriseRequest(enterpriseId, requestId);
         if (request.getStatus() != CollectionRequestStatus.ACCEPTED_ENTERPRISE
                 && request.getStatus() != CollectionRequestStatus.REASSIGN) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Chỉ hỗ trợ tìm collector khi request ở trạng thái ACCEPTED_ENTERPRISE/REASSIGN");
+                    "Chỉ hỗ trợ tìm collector khi request ở trạng thái ACCEPTED_ENTERPRISE hoặc REASSIGN");
         }
 
-        var collectors = collectorRepository.findByEnterprise_IdOrderByCreatedAtDesc(enterpriseId);
+        // Nếu là REASSIGN, tìm collector vừa từ chối để loại bỏ
+        Integer lastRejectedCollectorId = null;
+        if (request.getStatus() == CollectionRequestStatus.REASSIGN) {
+            var tracking = collectionTrackingRepository
+                    .findFirstByCollectionRequest_IdAndActionOrderByCreatedAtDesc(requestId, "rejected")
+                    .orElse(null);
+            
+            if (tracking != null && tracking.getCollector() != null) {
+                lastRejectedCollectorId = tracking.getCollector().getId();
+            }
+        }
+
+        // Lấy danh sách tất cả collector của doanh nghiệp
+        List<Collector> allCollectors = collectorRepository.findByEnterprise_IdOrderByCreatedAtDesc(enterpriseId);
+        List<EligibleCollectorResponse> result = new java.util.ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
-        return collectors.stream()
-                .filter(c -> c.getStatus() != null && (c.getStatus() == CollectorStatus.ACTIVE || c.getStatus() == CollectorStatus.AVAILABLE))
-                .filter(c -> c.getStatus() != CollectorStatus.SUSPEND)
-                .map(c -> {
-                    boolean online = c.getLastLocationUpdate() != null && Duration.between(c.getLastLocationUpdate(), now).toMinutes() <= 15;
-                    int active = (int) (
-                            collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ASSIGNED)
-                                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ACCEPTED_COLLECTOR)
-                                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ON_THE_WAY)
-                    );
-                    return EligibleCollectorResponse.builder()
-                            .id(c.getId())
-                            .fullName(c.getFullName())
-                            .status(c.getStatus() != null ? c.getStatus().name() : null)
-                            .distanceKm(null)
-                            .online(online)
-                            .activeTaskCount(active)
-                            .build();
-                })
-                .sorted((a, b) -> {
-                    int onlineCmp = Boolean.compare(Boolean.TRUE.equals(b.getOnline()), Boolean.TRUE.equals(a.getOnline()));
-                    if (onlineCmp != 0) return onlineCmp;
-                    return Integer.compare(a.getActiveTaskCount(), b.getActiveTaskCount());
-                })
-                .collect(Collectors.toList());
+
+        // Duyệt qua từng collector để kiểm tra điều kiện
+        for (Collector collector : allCollectors) {
+            // 1. Bỏ qua nếu collector không online
+            if (collector.getStatus() == null || collector.getStatus() != CollectorStatus.ONLINE) {
+                continue;
+            }
+
+            // 2. Bỏ qua nếu bị suspend (đã bao gồm ở trên nhưng giữ lại nếu cần check riêng sau này, nhưng hiện tại bỏ qua)
+            
+            // 3. Bỏ qua collector vừa từ chối (nếu có)
+            if (lastRejectedCollectorId != null && lastRejectedCollectorId.equals(collector.getId())) {
+                continue;
+            }
+
+            // 4. Kiểm tra online (có cập nhật vị trí trong 15 phút gần đây)
+            boolean isOnline = false;
+            if (collector.getLastLocationUpdate() != null) {
+                long minutesDiff = Duration.between(collector.getLastLocationUpdate(), now).toMinutes();
+                if (minutesDiff <= 15) {
+                    isOnline = true;
+                }
+            }
+
+            // 5. Đếm số lượng việc đang làm
+            long assignedCount = collectionRequestRepository.countByCollector_IdAndStatus(collector.getId(), CollectionRequestStatus.ASSIGNED);
+            long acceptedCount = collectionRequestRepository.countByCollector_IdAndStatus(collector.getId(), CollectionRequestStatus.ACCEPTED_COLLECTOR);
+            long onTheWayCount = collectionRequestRepository.countByCollector_IdAndStatus(collector.getId(), CollectionRequestStatus.ON_THE_WAY);
+            int activeTaskCount = (int) (assignedCount + acceptedCount + onTheWayCount);
+
+            // Tạo đối tượng kết quả
+            EligibleCollectorResponse response = new EligibleCollectorResponse();
+            response.setId(collector.getId());
+            response.setFullName(collector.getFullName());
+            response.setStatus(collector.getStatus() != null ? collector.getStatus().name() : null);
+            response.setDistanceKm(null); // Chưa tính khoảng cách
+            response.setOnline(isOnline);
+            response.setActiveTaskCount(activeTaskCount);
+
+            result.add(response);
+        }
+
+        // Sắp xếp danh sách: Online lên trước, sau đó đến ít việc hơn
+        result.sort((c1, c2) -> {
+            // So sánh online
+            boolean o1 = Boolean.TRUE.equals(c1.getOnline());
+            boolean o2 = Boolean.TRUE.equals(c2.getOnline());
+            if (o1 != o2) {
+                return o1 ? -1 : 1; // Online true đứng trước
+            }
+            // So sánh số lượng việc (ít việc hơn đứng trước)
+            return Integer.compare(c1.getActiveTaskCount(), c2.getActiveTaskCount());
+        });
+
+        return result;
     }
 
     @Override
@@ -222,9 +296,8 @@ public class EnterpriseAssignmentServiceImpl implements EnterpriseAssignmentServ
     }
 
     private static void validateCollectorAssignable(Collector collector) {
-        if (collector.getStatus() == null
-                || (collector.getStatus() != CollectorStatus.ACTIVE && collector.getStatus() != CollectorStatus.AVAILABLE)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collector không ở trạng thái active hoặc available");
+        if (collector.getStatus() == null || collector.getStatus() != CollectorStatus.ONLINE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collector không ở trạng thái online");
         }
     }
 

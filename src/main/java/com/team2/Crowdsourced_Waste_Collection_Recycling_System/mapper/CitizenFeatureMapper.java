@@ -35,10 +35,11 @@ public interface CitizenFeatureMapper {
     @Mapping(target = "feedbackCode", ignore = true)
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "updatedAt", expression = "java(java.time.LocalDateTime.now())")
-    @Mapping(target = "status", constant = "OPEN")
-    @Mapping(target = "severity", constant = "MEDIUM")
+    @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "subject", expression = "java(\"Complaint for Report #\" + request.getReportId() + \" - \" + request.getType())")
     @Mapping(target = "content", source = "content")
     @Mapping(target = "feedbackType", source = "type")
+    @Mapping(target = "rating", source = "rating")
+    @Mapping(target = "resolution", ignore = true)
     Feedback toFeedback(CreateComplaintRequest request);
 }

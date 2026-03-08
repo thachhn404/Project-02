@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AdminSystemAnalyticsResponse;
+
 @RestController
 @RequestMapping("/api/admin/analytics")
 @PreAuthorize("hasRole('ADMIN')")
@@ -22,6 +24,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminAnalyticsController {
 
     private final AdminAnalyticsService adminAnalyticsService;
+
+    @GetMapping("/system")
+    @Operation(summary = "Thống kê tổng quan toàn hệ thống")
+    public ResponseEntity<ApiResponse<AdminSystemAnalyticsResponse>> getSystemAnalytics() {
+        AdminSystemAnalyticsResponse result = adminAnalyticsService.getSystemAnalytics();
+        return ResponseEntity.ok(ApiResponse.<AdminSystemAnalyticsResponse>builder()
+                .result(result)
+                .message("Lấy thống kê hệ thống thành công")
+                .build());
+    }
 
     @GetMapping("/collected-weight")
     @Operation(summary = "Biểu đồ khối lượng rác đã thu gom toàn hệ thống")

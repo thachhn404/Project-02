@@ -90,6 +90,34 @@ public class CollectionController {
                 .build();
     }
 
+    @GetMapping("/waste-volume")
+    @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Thống kê khối lượng rác", description = "Thống kê khối lượng rác đã hoàn tất theo tháng/quý trong năm")
+    public ApiResponse<CollectorWasteVolumeStatsResponse> getWasteVolumeStats(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(value = "year", required = false) Integer year) {
+        Integer collectorId = extractCollectorId(jwt);
+        CollectorWasteVolumeStatsResponse stats = collectorService.getWasteVolumeStats(collectorId, year);
+        return ApiResponse.<CollectorWasteVolumeStatsResponse>builder()
+                .result(stats)
+                .build();
+    }
+
+    @GetMapping("/history")
+    @PreAuthorize("hasRole('COLLECTOR')")
+    @Operation(summary = "Lịch sử task và report", description = "Danh sách tất cả task và các báo cáo đã tạo")
+    public ApiResponse<CollectorHistoryResponse> getHistory(
+            @AuthenticationPrincipal Jwt jwt) {
+        Integer collectorId = extractCollectorId(jwt);
+        CollectorHistoryResponse response = CollectorHistoryResponse.builder()
+                .tasks(collectorService.getTasks(collectorId, null, true))
+                .reports(collectorReportService.getReportsByCollector(collectorId))
+                .build();
+        return ApiResponse.<CollectorHistoryResponse>builder()
+                .result(response)
+                .build();
+    }
+
     /**
      * Collector bắt đầu di chuyển: assigned -> on_the_way.
      */

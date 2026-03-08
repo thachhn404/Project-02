@@ -107,7 +107,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthenticationResponse login(AuthenticationRequest request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu dữ liệu đăng nhập");
@@ -143,6 +143,12 @@ public class AuthServiceImpl implements AuthService {
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.CONFLICT,
                                 "Tài khoản COLLECTOR thiếu hồ sơ collector"));
+
+                // Cập nhật trạng thái thành ONLINE khi đăng nhập (nếu không bị suspended)
+                if (collector.getStatus() != com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus.SUSPEND) {
+                    collector.setStatus(com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectorStatus.ONLINE);
+                    collectorRepository.save(collector);
+                }
 
                 collectorId = collector.getId();
                 if (collector.getEnterprise() == null || collector.getEnterprise().getId() == null) {

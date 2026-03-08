@@ -15,5 +15,8 @@ import lombok.experimental.FieldDefaults;
 public class CitizenLeaderboardResponse {
     Integer rank;
     Integer citizenId;
+    String fullName;
+    String ward;
+    String city;
     Integer totalPoint;
 }

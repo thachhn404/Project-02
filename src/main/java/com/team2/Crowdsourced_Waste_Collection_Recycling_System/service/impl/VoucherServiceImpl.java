@@ -21,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -35,45 +37,70 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     public List<VoucherResponse> getAvailableVouchers() {
-        return voucherRepository.findAllByActiveTrueOrderByIdDesc().stream()
-                .map(this::toVoucherResponse)
-                .toList();
+        // Lấy danh sách voucher đang hoạt động
+        List<Voucher> vouchers = voucherRepository.findAllByActiveTrueOrderByIdDesc();
+        
+        // Chuyển đổi sang response
+        List<VoucherResponse> responses = new ArrayList<>();
+        for (Voucher v : vouchers) {
+            responses.add(toVoucherResponse(v));
+        }
+        return responses;
     }
 
     @Override
     @Transactional
     public VoucherRedemptionResponse redeem(Integer voucherId, String citizenEmail) {
-        Voucher voucher = voucherRepository.findByIdForUpdate(voucherId)
-                .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
+        // 1. Tìm voucher và khóa dòng để tránh lỗi khi nhiều người cùng đổi
+        Optional<Voucher> voucherOpt = voucherRepository.findByIdForUpdate(voucherId);
+        if (voucherOpt.isEmpty()) {
+            throw new AppException(ErrorCode.VOUCHER_NOT_FOUND);
+        }
+        Voucher voucher = voucherOpt.get();
 
+        // 2. Kiểm tra điều kiện đổi voucher
         validateVoucherRedeemable(voucher);
 
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.CITIZEN_NOT_FOUND));
+        // 3. Lấy thông tin công dân
+        Optional<Citizen> citizenOpt = citizenRepository.findByUser_Email(citizenEmail);
+        if (citizenOpt.isEmpty()) {
+            throw new AppException(ErrorCode.CITIZEN_NOT_FOUND);
+        }
+        Citizen citizen = citizenOpt.get();
 
-        Citizen lockedCitizen = citizenRepository.findByIdForUpdate(citizen.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.CITIZEN_NOT_FOUND));
+        // 4. Khóa thông tin công dân để cập nhật điểm an toàn
+        Optional<Citizen> lockedCitizenOpt = citizenRepository.findByIdForUpdate(citizen.getId());
+        if (lockedCitizenOpt.isEmpty()) {
+            throw new AppException(ErrorCode.CITIZEN_NOT_FOUND);
+        }
+        Citizen lockedCitizen = lockedCitizenOpt.get();
 
+        // 5. Kiểm tra điểm tích lũy
         int currentPoints = lockedCitizen.getTotalPoints() != null ? lockedCitizen.getTotalPoints() : 0;
         int cost = voucher.getPointsRequired() != null ? voucher.getPointsRequired() : 0;
+        
         if (currentPoints < cost) {
             throw new AppException(ErrorCode.INSUFFICIENT_POINTS);
         }
 
+        // 6. Kiểm tra số lượng tồn kho
         Integer stock = voucher.getRemainingStock();
         if (stock != null && stock <= 0) {
             throw new AppException(ErrorCode.VOUCHER_OUT_OF_STOCK);
         }
 
+        // 7. Trừ điểm công dân
         int balanceAfter = currentPoints - cost;
         lockedCitizen.setTotalPoints(balanceAfter);
         citizenRepository.save(lockedCitizen);
 
+        // 8. Trừ tồn kho voucher (nếu có giới hạn)
         if (stock != null) {
             voucher.setRemainingStock(stock - 1);
             voucherRepository.save(voucher);
         }
 
+        // 9. Lưu lịch sử đổi voucher
         VoucherRedemption redemption = new VoucherRedemption();
         redemption.setCitizen(lockedCitizen);
         redemption.setVoucher(voucher);
@@ -83,14 +110,17 @@ public class VoucherServiceImpl implements VoucherService {
         redemption.setRedeemedAt(LocalDateTime.now());
         VoucherRedemption savedRedemption = voucherRedemptionRepository.save(redemption);
 
-        User user = userRepository.findByEmail(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        // 10. Lưu lịch sử giao dịch trừ điểm
+        User user = userRepository.findByEmail(citizenEmail).orElse(null);
+        if (user == null) {
+             throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
 
         PointTransaction tx = new PointTransaction();
         tx.setCitizen(lockedCitizen);
-        tx.setPoints(-cost);
+        tx.setPoints(-cost); // Điểm âm vì là tiêu dùng
         tx.setTransactionType("SPEND_VOUCHER");
-        tx.setDescription("Redeem voucher #" + voucher.getId() + " - " + voucher.getTitle());
+        tx.setDescription("Đổi voucher #" + voucher.getId() + " - " + voucher.getTitle());
         tx.setBalanceAfter(balanceAfter);
         tx.setCreatedBy(user);
         tx.setCreatedAt(LocalDateTime.now());
@@ -101,12 +131,19 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     public List<VoucherRedemptionResponse> getMyVouchers(String citizenEmail) {
-        Citizen citizen = citizenRepository.findByUser_Email(citizenEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.CITIZEN_NOT_FOUND));
+        Optional<Citizen> citizenOpt = citizenRepository.findByUser_Email(citizenEmail);
+        if (citizenOpt.isEmpty()) {
+            throw new AppException(ErrorCode.CITIZEN_NOT_FOUND);
+        }
+        Citizen citizen = citizenOpt.get();
 
-        return voucherRedemptionRepository.findAllByCitizen_IdOrderByRedeemedAtDesc(citizen.getId()).stream()
-                .map(r -> toVoucherRedemptionResponse(r, null))
-                .toList();
+        List<VoucherRedemption> redemptions = voucherRedemptionRepository.findAllByCitizen_IdOrderByRedeemedAtDesc(citizen.getId());
+        
+        List<VoucherRedemptionResponse> responses = new ArrayList<>();
+        for (VoucherRedemption r : redemptions) {
+            responses.add(toVoucherRedemptionResponse(r, null));
+        }
+        return responses;
     }
 
     private void validateVoucherRedeemable(Voucher voucher) {
@@ -125,9 +162,14 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     private VoucherResponse toVoucherResponse(Voucher voucher) {
+        String code = voucher.getVoucherCode();
+        if (code == null) {
+            code = formatVoucherCode(voucher.getId());
+        }
+        
         return VoucherResponse.builder()
                 .id(voucher.getId())
-                .voucherCode(voucher.getVoucherCode() != null ? voucher.getVoucherCode() : formatVoucherCode(voucher.getId()))
+                .voucherCode(code)
                 .bannerUrl(voucher.getBannerUrl())
                 .logoUrl(voucher.getLogoUrl())
                 .value(voucher.getValueDisplay())

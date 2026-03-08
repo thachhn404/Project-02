@@ -550,7 +550,7 @@ public class DataSeeder {
             collector.setEnterprise(enterprise);
             collector.setEmail(collectorUser.getEmail());
             collector.setFullName(collectorUser.getFullName());
-            collector.setStatus(CollectorStatus.AVAILABLE);
+            collector.setStatus(CollectorStatus.ONLINE);
             collector.setCreatedAt(LocalDateTime.now());
             return collectorRepository.save(collector);
         });

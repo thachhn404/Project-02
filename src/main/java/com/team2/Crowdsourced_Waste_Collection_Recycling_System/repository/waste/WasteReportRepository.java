@@ -24,6 +24,9 @@ public interface WasteReportRepository extends JpaRepository<WasteReport, Intege
 
     Optional<WasteReport> findByReportCode(String reportCode);
 
+    @Query("SELECT wr.status, COUNT(wr) FROM WasteReport wr WHERE wr.citizen.id = :citizenId GROUP BY wr.status")
+    List<Object[]> countStatusByCitizenId(@Param("citizenId") Integer citizenId);
+
     @Query("""
             SELECT COUNT(wr)
             FROM WasteReport wr

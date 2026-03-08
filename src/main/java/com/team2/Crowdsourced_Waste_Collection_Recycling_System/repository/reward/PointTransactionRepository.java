@@ -47,6 +47,33 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
         @Param("citizenId") Integer citizenId,
         @Param("type") String type
     );
+
+    @Query("SELECT SUM(pt.points) FROM PointTransaction pt WHERE pt.transactionType = 'EARN'")
+    Long sumTotalPointsDistributed();
+
+    @Query("""
+        SELECT YEAR(pt.createdAt), MONTH(pt.createdAt), SUM(pt.points) 
+        FROM PointTransaction pt 
+        WHERE pt.transactionType = 'EARN'
+        GROUP BY YEAR(pt.createdAt), MONTH(pt.createdAt)
+        ORDER BY YEAR(pt.createdAt) DESC, MONTH(pt.createdAt) DESC
+    """)
+    List<Object[]> sumPointsDistributedPerMonth();
+
+    @Query("""
+            SELECT COALESCE(SUM(pt.points), 0)
+            FROM PointTransaction pt
+            WHERE pt.citizen.id = :citizenId
+              AND pt.transactionType = :type
+              AND (:from is null OR pt.createdAt >= :from)
+              AND (:to is null OR pt.createdAt < :to)
+            """)
+    Long sumPointsByCitizenIdAndTypeAndRange(
+            @Param("citizenId") Integer citizenId,
+            @Param("type") String type,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
     
     PointTransaction findTopByCitizenIdOrderByCreatedAtDesc(Integer citizenId);
     
@@ -56,5 +83,25 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate
     );
+
+    @Query("""
+        SELECT SUM(pt.points) 
+        FROM PointTransaction pt 
+        JOIN pt.collectionRequest req 
+        WHERE req.enterprise.id = :enterpriseId 
+          AND pt.transactionType = 'EARN'
+    """)
+    Long sumTotalPointsDistributedByEnterprise(@Param("enterpriseId") Integer enterpriseId);
+
+    @Query("""
+        SELECT YEAR(pt.createdAt), MONTH(pt.createdAt), SUM(pt.points) 
+        FROM PointTransaction pt 
+        JOIN pt.collectionRequest req 
+        WHERE req.enterprise.id = :enterpriseId 
+          AND pt.transactionType = 'EARN'
+        GROUP BY YEAR(pt.createdAt), MONTH(pt.createdAt)
+        ORDER BY YEAR(pt.createdAt) DESC, MONTH(pt.createdAt) DESC
+    """)
+    List<Object[]> sumPointsDistributedByEnterprisePerMonth(@Param("enterpriseId") Integer enterpriseId);
 }
 

@@ -1,6 +1,5 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.impl;
 
-import com.team2.Crowdsourced_Waste_Collection_Recycling_System.config.WorkRuleProperties;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateCollectorReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorReportResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.WasteCategoryResponse;
@@ -54,13 +53,11 @@ public class CollectorReportCreationService {
     private final PointTransactionRepository pointTransactionRepository;
     private final WasteReportRepository wasteReportRepository;
     private final CloudinaryService cloudinaryService;
-    private final WorkRuleProperties workRuleProperties;
 
     @Transactional
     public CollectorReportResponse createCollectorReport(Integer requestId, Integer collectorId, CreateCollectorReportRequest request) {
         CollectionRequest collectionRequest = getAndValidateCollectionRequest(requestId, collectorId);
         WasteReport wasteReport = getAndValidateWasteReport(collectionRequest);
-        validateGpsWithinRadius(wasteReport, request.getLatitude(), request.getLongitude());
         validateInput(request);
 
         Calculation calculation = calculateItems(request.getCategoryIds(), request.getQuantities(), request.getVerificationRate());
@@ -103,18 +100,6 @@ public class CollectorReportCreationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collection Request thiếu toạ độ ban đầu");
         }
         return wasteReport;
-    }
-
-    private void validateGpsWithinRadius(WasteReport wasteReport, Double actualLatitude, Double actualLongitude) {
-        double distKm = haversineKm(
-                wasteReport.getLatitude().doubleValue(),
-                wasteReport.getLongitude().doubleValue(),
-                actualLatitude,
-                actualLongitude
-        );
-        if (distKm > workRuleProperties.getReportRadiusKm()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "GPS thực tế không nằm gần vị trí ban đầu");
-        }
     }
 
     private void validateInput(CreateCollectorReportRequest request) {
@@ -172,10 +157,6 @@ public class CollectorReportCreationService {
             if (category.getUnit() == WasteUnit.KG) {
                 totalWeightKg = totalWeightKg.add(quantity);
             }
-        }
-
-        if (totalWeightKg.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tổng khối lượng phải > 0");
         }
 
         return new Calculation(items, totalPoints, totalWeightKg);
@@ -315,17 +296,6 @@ public class CollectorReportCreationService {
                 .imageUrls(imageUrls)
                 .categories(categories)
                 .build();
-    }
-
-    private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {
-        final double r = 6371.0;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return r * c;
     }
 
     private record Calculation(List<CollectorReportItem> items, int totalPoints, BigDecimal totalWeightKg) {

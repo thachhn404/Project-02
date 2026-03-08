@@ -91,7 +91,7 @@ public class SeedEnterpriseCollectorInitializer {
             collector.setEnterprise(enterprise);
             collector.setEmail(collectorUser.getEmail());
             collector.setFullName(collectorUser.getFullName());
-            collector.setStatus(CollectorStatus.AVAILABLE);
+            collector.setStatus(CollectorStatus.OFFLINE);
             collector.setViolationCount(0);
             collector.setCreatedAt(LocalDateTime.now());
             return collectorRepository.save(collector);

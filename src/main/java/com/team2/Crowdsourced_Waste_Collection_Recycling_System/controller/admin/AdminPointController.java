@@ -26,7 +26,7 @@ public class AdminPointController {
     @GetMapping("/citizens")
     @Operation(summary = "Lấy danh sách điểm của tất cả citizen")
     public ResponseEntity<ApiResponse<List<CitizenLeaderboardResponse>>> getAllCitizenPoints() {
-        List<CitizenLeaderboardResponse> result = wasteReportService.getLeaderboard(null);
+        List<CitizenLeaderboardResponse> result = wasteReportService.getLeaderboard(null, null);
         return ResponseEntity.ok(ApiResponse.<List<CitizenLeaderboardResponse>>builder()
                 .result(result)
                 .message("Lấy danh sách điểm citizen thành công")

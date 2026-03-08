@@ -53,11 +53,14 @@ public class Feedback {
     @Column(name = "content", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
-    @Column(name = "severity", length = 20)
-    private String severity;
+    @Column(name = "resolution", columnDefinition = "NVARCHAR(MAX)")
+    private String resolution;
 
     @Column(name = "status", length = 20)
     private String status;
+
+    @Column(name = "rating")
+    private Integer rating;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

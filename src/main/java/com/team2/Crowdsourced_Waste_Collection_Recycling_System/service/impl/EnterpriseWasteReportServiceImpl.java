@@ -7,6 +7,7 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.ReportIma
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReport;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.entity.WasteReportItem;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.WasteReportStatus;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.collector.CollectionRequestRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.enterprise.EnterpriseRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.ReportImageRepository;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.repository.waste.WasteReportItemRepository;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportService {
 
     private final WasteReportRepository wasteReportRepository;
+    private final CollectionRequestRepository collectionRequestRepository;
     private final EnterpriseRepository enterpriseRepository;
     private final ReportImageRepository reportImageRepository;
     private final WasteReportItemRepository wasteReportItemRepository;
@@ -79,10 +81,16 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
                 wasteReportItemRepository.findWithCategoryByReportId(report.getId())
         );
 
+        Integer requestId = collectionRequestRepository.findByReport_Id(report.getId())
+                .map(r -> r.getId())
+                .orElse(null);
+
         return EnterpriseWasteReportResponse.builder()
                 .id(report.getId())
                 .reportCode(report.getReportCode())
+                .collectionRequestId(requestId)
                 .status(report.getStatus() != null ? report.getStatus().name() : null)
+                .submitBy(resolveSubmitBy(report))
                 .wasteType(report.getWasteType())
                 .description(report.getDescription())
                 .address(report.getAddress())
@@ -93,6 +101,28 @@ public class EnterpriseWasteReportServiceImpl implements EnterpriseWasteReportSe
                 .categories(categories)
                 .createdAt(report.getCreatedAt())
                 .build();
+    }
+
+    private String resolveSubmitBy(WasteReport report) {
+        if (report == null || report.getCitizen() == null) {
+            return null;
+        }
+        var citizen = report.getCitizen();
+        if (citizen.getUser() != null) {
+            if (citizen.getUser().getFullName() != null && !citizen.getUser().getFullName().isBlank()) {
+                return citizen.getUser().getFullName();
+            }
+            if (citizen.getUser().getEmail() != null && !citizen.getUser().getEmail().isBlank()) {
+                return citizen.getUser().getEmail();
+            }
+        }
+        if (citizen.getFullName() != null && !citizen.getFullName().isBlank()) {
+            return citizen.getFullName();
+        }
+        if (citizen.getEmail() != null && !citizen.getEmail().isBlank()) {
+            return citizen.getEmail();
+        }
+        return null;
     }
 
     private List<WasteCategoryResponse> toWasteCategoryResponses(List<WasteReportItem> items) {

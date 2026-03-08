@@ -23,12 +23,21 @@ public interface WasteReportService {
 
     List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenRewardHistoryResponse> getRewardHistory(String citizenEmail, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
 
-    List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenLeaderboardResponse> getLeaderboard(String region);
+    List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenLeaderboardResponse> getLeaderboard(String region, Integer limit);
+
+    com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenPointSummaryResponse getMyPointSummary(
+            String citizenEmail,
+            Integer year,
+            Integer quarter,
+            Integer month
+    );
 
     com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse createComplaint(com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.CreateComplaintRequest request, String citizenEmail);
 
     List<com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ComplaintResponse> getComplaints(String citizenEmail);
 
     List<WasteCategoryResponse> getWasteCategories();
+
+    com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CitizenReportStatsResponse getMyReportStats(String citizenEmail);
 }
 

@@ -7,22 +7,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class EnterpriseResponse {
-    Integer id;
-    String name;
-    String address;
-    String phone;
-    String email;
-    String serviceWards;
-    String serviceCities;
-    String status;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+public class CitizenReportStatsResponse {
+    Map<String, Long> reportsByStatus;
+    Map<String, BigDecimal> wasteWeightByType;
 }

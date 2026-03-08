@@ -29,13 +29,24 @@ public class EnterpriseVoucherServiceImpl implements EnterpriseVoucherService {
     @Override
     @Transactional(readOnly = true)
     public List<EnterpriseVoucherResponse> list(Boolean active) {
-        List<Voucher> vouchers = voucherRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
-        if (active != null) {
-            vouchers = vouchers.stream()
-                    .filter(v -> active.equals(v.getActive()))
-                    .toList();
+        // Lấy tất cả voucher sắp xếp theo ID giảm dần
+        List<Voucher> allVouchers = voucherRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        
+        List<EnterpriseVoucherResponse> result = new ArrayList<>();
+        
+        for (Voucher voucher : allVouchers) {
+            // Nếu có yêu cầu lọc theo trạng thái active
+            if (active != null) {
+                if (!active.equals(voucher.getActive())) {
+                    continue; // Bỏ qua nếu không khớp trạng thái
+                }
+            }
+            
+            // Chuyển đổi và thêm vào danh sách kết quả
+            result.add(toResponse(voucher));
         }
-        return vouchers.stream().map(EnterpriseVoucherServiceImpl::toResponse).toList();
+        
+        return result;
     }
 
     @Override

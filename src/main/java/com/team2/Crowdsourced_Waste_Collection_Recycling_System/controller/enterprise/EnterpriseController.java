@@ -5,9 +5,11 @@ import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.Acce
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.RejectWasteReportRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AssignCollectorResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseCollectorRejectionResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EnterpriseRequestReportDetailResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.EligibleCollectorResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectionRequestActionResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseCollectorRejectionService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseAssignmentService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseReportDetailService;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.EnterpriseRequestService;
@@ -34,6 +36,7 @@ public class EnterpriseController extends EnterpriseControllerSupport {
     private final EnterpriseAssignmentService enterpriseAssignmentService;
     private final EnterpriseRequestService enterpriseRequestService;
     private final EnterpriseReportDetailService enterpriseReportDetailService;
+    private final EnterpriseCollectorRejectionService enterpriseCollectorRejectionService;
 
     @PostMapping("/reports/{reportCode}/assign-collector")
     @PreAuthorize("hasRole('ENTERPRISE')")
@@ -115,5 +118,15 @@ public class EnterpriseController extends EnterpriseControllerSupport {
         String reason = body != null ? body.getReason() : null;
         enterpriseRequestService.rejectWasteReport(enterpriseId, reportCode, reason);
         return ok("Rejected");
+    }
+
+    @GetMapping("/collector-rejections")
+    @PreAuthorize("hasAnyRole('ENTERPRISE', 'ENTERPRISE_ADMIN')")
+    @Operation(summary = "Danh sách task bị Collector từ chối", description = "Trả về danh sách CollectionRequest status REASSIGN kèm WasteReport và rejectionReason")
+    public ApiResponse<List<EnterpriseCollectorRejectionResponse>> getCollectorRejections(
+            @AuthenticationPrincipal Jwt jwt) {
+        Integer enterpriseId = extractEnterpriseId(jwt);
+        List<EnterpriseCollectorRejectionResponse> result = enterpriseCollectorRejectionService.getCollectorRejections(enterpriseId);
+        return ok(result);
     }
 }

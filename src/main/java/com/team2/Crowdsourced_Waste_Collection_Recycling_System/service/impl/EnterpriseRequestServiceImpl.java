@@ -38,32 +38,50 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
     @Override
     @Transactional
     public Integer acceptWasteReport(Integer enterpriseId, String reportCode, java.math.BigDecimal estimatedWeight) {
+        // Kiểm tra mã báo cáo
         if (reportCode == null || reportCode.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu report_code");
         }
+
+        // Tìm báo cáo rác trong DB
         WasteReport wasteReport = wasteReportRepository.findByReportCode(reportCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Waste Report không tồn tại"));
+        
+        // Kiểm tra doanh nghiệp
         Enterprise enterprise = requireEnterprise(enterpriseId);
 
-        // Idempotent behavior:
-        // - If PENDING: accept and create CollectionRequest
-        // - If already ACCEPTED_ENTERPRISE: ensure a CollectionRequest exists (create if missing) and return its id
-        // - Otherwise: reject
+        // Logic xử lý:
+        // 1. Nếu báo cáo chưa được xử lý (PENDING) -> Chấp nhận và tạo request mới
+        // 2. Nếu đã được doanh nghiệp này chấp nhận (ACCEPTED_ENTERPRISE) -> Trả về ID request cũ
+        // 3. Các trường hợp khác -> Báo lỗi
+
         LocalDateTime now = LocalDateTime.now();
+
+        // Trường hợp 1: Báo cáo đang chờ xử lý hoặc chưa có trạng thái
         if (wasteReport.getStatus() == null || wasteReport.getStatus() == WasteReportStatus.PENDING) {
+            
+            // Kiểm tra xem địa chỉ có nằm trong khu vực phục vụ không
             if (!isInServiceArea(enterprise, wasteReport)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Báo cáo nằm ngoài khu vực phục vụ của doanh nghiệp");
             }
+
+            // Kiểm tra xem đã tồn tại request nào cho báo cáo này chưa (để tránh trùng lặp)
             if (collectionRequestRepository.existsByReport_Id(wasteReport.getId())) {
-                return collectionRequestRepository.findByReport_Id(wasteReport.getId())
-                        .map(CollectionRequest::getId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Trạng thái không nhất quán"));
+                CollectionRequest existingRequest = collectionRequestRepository.findByReport_Id(wasteReport.getId()).orElse(null);
+                if (existingRequest != null) {
+                    return existingRequest.getId();
+                } else {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Trạng thái không nhất quán: Có request nhưng không tìm thấy");
+                }
             }
+
+            // Cập nhật trạng thái báo cáo
             wasteReport.setStatus(WasteReportStatus.ACCEPTED_ENTERPRISE);
             wasteReport.setAcceptedAt(now);
             wasteReport.setUpdatedAt(now);
             wasteReportRepository.save(wasteReport);
 
+            // Tạo request thu gom mới
             CollectionRequest cr = new CollectionRequest();
             cr.setRequestCode(generateRequestCode());
             cr.setReport(wasteReport);
@@ -72,34 +90,48 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
             cr.setCreatedAt(now);
             cr.setUpdatedAt(now);
             cr.setSlaViolated(false);
+            
+            // Lưu lần 1 để có ID
             collectionRequestRepository.save(cr);
+            
+            // Cập nhật lại mã request theo format chuẩn (CR + ID)
             cr.setRequestCode(String.format("CR%03d", cr.getId()));
             collectionRequestRepository.save(cr);
+
             return cr.getId();
-        } else if (wasteReport.getStatus() == WasteReportStatus.ACCEPTED_ENTERPRISE) {
-            return collectionRequestRepository.findByReport_Id(wasteReport.getId())
-                    .map(existing -> {
-                        if (existing.getRequestCode() == null || !existing.getRequestCode().matches("^CR\\d{3}$")) {
-                            existing.setRequestCode(String.format("CR%03d", existing.getId()));
-                            collectionRequestRepository.save(existing);
-                        }
-                        return existing.getId();
-                    })
-                    .orElseGet(() -> {
-                        CollectionRequest cr = new CollectionRequest();
-                        cr.setRequestCode(generateRequestCode());
-                        cr.setReport(wasteReport);
-                        cr.setEnterprise(enterprise);
-                        cr.setStatus(CollectionRequestStatus.ACCEPTED_ENTERPRISE);
-                        cr.setCreatedAt(now);
-                        cr.setUpdatedAt(now);
-                        cr.setSlaViolated(false);
-                        collectionRequestRepository.save(cr);
-                        cr.setRequestCode(String.format("CR%03d", cr.getId()));
-                        collectionRequestRepository.save(cr);
-                        return cr.getId();
-                    });
-        } else {
+
+        } 
+        // Trường hợp 2: Đã được chấp nhận trước đó
+        else if (wasteReport.getStatus() == WasteReportStatus.ACCEPTED_ENTERPRISE) {
+            CollectionRequest existing = collectionRequestRepository.findByReport_Id(wasteReport.getId()).orElse(null);
+            
+            if (existing != null) {
+                // Kiểm tra và cập nhật lại mã request nếu chưa đúng format
+                if (existing.getRequestCode() == null || !existing.getRequestCode().matches("^CR\\d{3}$")) {
+                    existing.setRequestCode(String.format("CR%03d", existing.getId()));
+                    collectionRequestRepository.save(existing);
+                }
+                return existing.getId();
+            } else {
+                // Nếu trạng thái là ACCEPTED nhưng chưa có request (lỗi dữ liệu cũ?), tạo mới
+                CollectionRequest cr = new CollectionRequest();
+                cr.setRequestCode(generateRequestCode());
+                cr.setReport(wasteReport);
+                cr.setEnterprise(enterprise);
+                cr.setStatus(CollectionRequestStatus.ACCEPTED_ENTERPRISE);
+                cr.setCreatedAt(now);
+                cr.setUpdatedAt(now);
+                cr.setSlaViolated(false);
+                collectionRequestRepository.save(cr);
+                
+                cr.setRequestCode(String.format("CR%03d", cr.getId()));
+                collectionRequestRepository.save(cr);
+                
+                return cr.getId();
+            }
+        } 
+        // Trường hợp 3: Trạng thái không hợp lệ
+        else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Waste Report không ở trạng thái hợp lệ để accept");
         }
     }
@@ -141,23 +173,42 @@ public class EnterpriseRequestServiceImpl implements EnterpriseRequestService {
             return false;
         }
 
+        // Lấy danh sách phường/xã và quận/huyện phục vụ
         String wardList = enterprise.getServiceWards();
         String cityList = enterprise.getServiceCities();
         String lowerAddress = address.toLowerCase();
 
-        boolean wardOk = wardList == null || wardList.isBlank()
-                || Arrays.stream(wardList.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(String::toLowerCase)
-                .anyMatch(lowerAddress::contains);
+        // Kiểm tra phường/xã (nếu không cấu hình thì coi như ok)
+        boolean wardOk = false;
+        if (wardList == null || wardList.isBlank()) {
+            wardOk = true;
+        } else {
+            // Tách chuỗi bằng dấu phẩy và duyệt từng phần tử
+            String[] wards = wardList.split(",");
+            for (String ward : wards) {
+                String cleanWard = ward.trim();
+                if (!cleanWard.isEmpty() && lowerAddress.contains(cleanWard.toLowerCase())) {
+                    wardOk = true;
+                    break;
+                }
+            }
+        }
 
-        boolean cityOk = cityList == null || cityList.isBlank()
-                || Arrays.stream(cityList.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(String::toLowerCase)
-                .anyMatch(lowerAddress::contains);
+        // Kiểm tra quận/huyện/thành phố (nếu không cấu hình thì coi như ok)
+        boolean cityOk = false;
+        if (cityList == null || cityList.isBlank()) {
+            cityOk = true;
+        } else {
+            // Tách chuỗi bằng dấu phẩy và duyệt từng phần tử
+            String[] cities = cityList.split(",");
+            for (String city : cities) {
+                String cleanCity = city.trim();
+                if (!cleanCity.isEmpty() && lowerAddress.contains(cleanCity.toLowerCase())) {
+                    cityOk = true;
+                    break;
+                }
+            }
+        }
 
         return wardOk && cityOk;
     }

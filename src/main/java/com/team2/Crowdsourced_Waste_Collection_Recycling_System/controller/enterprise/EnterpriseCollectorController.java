@@ -83,7 +83,7 @@ public class EnterpriseCollectorController extends EnterpriseControllerSupport {
             collector.setVehicleType(vt.name());
         }
         collector.setVehiclePlate(request.getVehiclePlate());
-        collector.setStatus(CollectorStatus.AVAILABLE);
+        collector.setStatus(CollectorStatus.OFFLINE);
         collector.setCreatedAt(LocalDateTime.now());
         Collector savedCollector = collectorRepository.save(collector);
         savedCollector.setEmployeeCode(String.format("C%03d", savedCollector.getId()));

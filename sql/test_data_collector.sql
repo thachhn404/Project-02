@@ -1,6 +1,6 @@
 -- ============================================================================
 -- TEST DATA FOR COLLECTOR WORKFLOW
--- Sử dụng CollectorStatus enum: AVAILABLE, ACTIVE, INACTIVE, SUSPEND
+-- Sử dụng CollectorStatus enum: ONLINE, OFFLINE, SUSPEND
 -- ============================================================================
 
 -- ============================================================================
@@ -34,7 +34,7 @@ GO
 
 -- ============================================================================
 -- 1. COLLECTORS TABLE
--- 4 Collectors với 4 trạng thái khác nhau: AVAILABLE, ACTIVE, INACTIVE, SUSPEND
+-- 4 Collectors với 4 trạng thái khác nhau: ONLINE, OFFLINE, SUSPEND
 -- ============================================================================
 IF NOT EXISTS (SELECT 1 FROM collectors WHERE user_id = 101)
 BEGIN
@@ -43,21 +43,21 @@ BEGIN
                            last_location_update,
                            total_collections, successful_collections, total_weight_collected, created_at)
     VALUES
-    -- Collector 1: AVAILABLE - Sẵn sàng nhận task mới
+    -- Collector 1: ONLINE - Sẵn sàng nhận task mới
     (101, 1, 'collector1@example.com', N'Nguyễn Văn A', 'COL-001', 
-     'TRUCK', '29A-12345', 'AVAILABLE',
+     'TRUCK', '29A-12345', 'ONLINE',
      '2026-02-05 07:00:00',
      50, 45, 1250.50, '2024-01-15 08:00:00'),
     
-    -- Collector 2: ACTIVE - Đang có nhiệm vụ
+    -- Collector 2: ONLINE - Đang có nhiệm vụ (Vẫn tính là ONLINE)
     (102, 1, 'collector2@example.com', N'Trần Thị B', 'COL-002',
-     'MOTORCYCLE', '29B-98765', 'ACTIVE',
+     'MOTORCYCLE', '29B-98765', 'ONLINE',
      '2026-02-05 07:15:00',
      15, 12, 320.75, '2024-03-20 09:00:00'),
     
-    -- Collector 3: INACTIVE - Tạm nghỉ
+    -- Collector 3: OFFLINE - Tạm nghỉ
     (103, 1, 'collector3@example.com', N'Lê Văn C', 'COL-003',
-     'TRUCK', '29C-54321', 'INACTIVE',
+     'TRUCK', '29C-54321', 'OFFLINE',
      '2026-02-04 18:00:00',
      100, 95, 2500.00, '2023-11-01 10:00:00'),
     
@@ -80,32 +80,29 @@ SELECT
     total_collections,
     successful_collections,
     CASE 
-        WHEN status = 'AVAILABLE' THEN N'✅ Sẵn sàng nhận task'
-        WHEN status = 'ACTIVE' THEN N'🔵 Đang làm việc'
-        WHEN status = 'INACTIVE' THEN N'⏸️ Tạm nghỉ'
+        WHEN status = 'ONLINE' THEN N'✅ Đang online'
+        WHEN status = 'OFFLINE' THEN N'⏸️ Đang offline'
         WHEN status = 'SUSPEND' THEN N'❌ Bị tạm ngừng'
     END AS status_desc
 FROM collectors
 WHERE enterprise_id = 1
 ORDER BY 
     CASE status
-        WHEN 'AVAILABLE' THEN 1
-        WHEN 'ACTIVE' THEN 2
-        WHEN 'INACTIVE' THEN 3
-        WHEN 'SUSPEND' THEN 4
+        WHEN 'ONLINE' THEN 1
+        WHEN 'OFFLINE' THEN 2
+        WHEN 'SUSPEND' THEN 3
     END;
 
 -- ============================================================================
 -- SUMMARY
 -- ============================================================================
 -- CollectorStatus Enum Values:
--- - AVAILABLE: Sẵn sàng nhận nhiệm vụ mới (chưa có task hoặc đã xong task)
--- - ACTIVE: Đang làm việc (đã có task được gán hoặc đang thu gom)
--- - INACTIVE: Tạm nghỉ (không nhận task mới, do nghỉ phép hoặc lý do cá nhân)
--- - SUSPEND: Bị tạm ngừng (do vi phạm quy định, cần review từ Enterprise)
+-- - ONLINE: Đang online, sẵn sàng nhận nhiệm vụ hoặc đang làm việc
+-- - OFFLINE: Đang offline, không nhận task mới
+-- - SUSPEND: Bị tạm ngừng (do vi phạm quy định)
 --
 -- Nghiệp vụ:
--- - Chỉ AVAILABLE và ACTIVE mới có thể được gán task
--- - INACTIVE và SUSPEND không được gán task mới
--- - Enterprise có thể thay đổi status của collector
+-- - Chỉ ONLINE mới có thể được gán task
+-- - OFFLINE và SUSPEND không được gán task mới
+-- - Khi login, status chuyển sang ONLINE
 -- ============================================================================

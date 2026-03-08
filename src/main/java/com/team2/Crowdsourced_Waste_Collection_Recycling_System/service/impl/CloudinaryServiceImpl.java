@@ -98,7 +98,9 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         if ("requests".equals(normalized)) {
             return "requests";
         }
-        if ("feedbacks".equals(normalized)) {
+        if ("feedbacks".equals(normalized)
+                || "complaints".equals(normalized)
+                || "complaint".equals(normalized)) {
             return "feedbacks";
         }
         if ("collector_reports".equals(normalized)

@@ -3,9 +3,13 @@ package com.team2.Crowdsourced_Waste_Collection_Recycling_System.service;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorPerformanceStatsResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorTaskResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorTaskStatusCountResponse;
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorWasteVolumeStatsResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.CollectorWorkHistoryItemResponse;
 
 import java.util.List;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 public interface CollectorService {
 
@@ -16,6 +20,10 @@ public interface CollectorService {
     List<CollectorWorkHistoryItemResponse> getWorkHistory(Integer collectorId, String status);
 
     CollectorPerformanceStatsResponse getStats(Integer collectorId, Integer year);
+
+    CollectorWasteVolumeStatsResponse getWasteVolumeStats(Integer collectorId, Integer year);
+
+    Map<String, BigDecimal> getWasteTypeStats(Integer collectorId);
 
     void acceptTask(Integer requestId, Integer collectorId);
 

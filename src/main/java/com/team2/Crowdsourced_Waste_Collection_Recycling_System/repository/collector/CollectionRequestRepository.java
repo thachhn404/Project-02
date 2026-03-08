@@ -208,6 +208,17 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
             """, nativeQuery = true)
     List<CollectorTaskStatusCountView> countTasksByStatusForCollector(@Param("collectorId") Integer collectorId);
 
+    @Query("SELECT req.status, COUNT(req) FROM CollectionRequest req WHERE req.enterprise.id = :enterpriseId GROUP BY req.status")
+    List<Object[]> countStatusByEnterpriseId(@Param("enterpriseId") Integer enterpriseId);
+
+    @Query("""
+        SELECT req.collector.id, req.collector.fullName, COUNT(req), SUM(COALESCE(req.actualWeightKg, 0))
+        FROM CollectionRequest req
+        WHERE req.enterprise.id = :enterpriseId AND req.status = com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.COMPLETED
+        GROUP BY req.collector.id, req.collector.fullName
+    """)
+    List<Object[]> getCollectorPerformanceForEnterprise(@Param("enterpriseId") Integer enterpriseId);
+
     interface CollectorWorkHistoryView {
         Integer getId();
 
@@ -234,6 +245,26 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
         java.time.LocalDateTime getUpdatedAt();
     }
 
+    @Query("""
+        SELECT c.id, c.fullName, COUNT(req), COALESCE(SUM(req.actualWeightKg), 0)
+        FROM Collector c
+        LEFT JOIN CollectionRequest req ON req.collector.id = c.id AND req.status = com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.COMPLETED
+        GROUP BY c.id, c.fullName
+        ORDER BY COALESCE(SUM(req.actualWeightKg), 0) DESC
+    """)
+    List<Object[]> getGlobalCollectorPerformance();
+
+    @Query(value = """
+                SELECT
+                    COALESCE(SUM(cr.actual_weight_kg), 0)
+                FROM collection_requests cr
+                WHERE cr.status = 'completed'
+                  AND cr.actual_weight_kg IS NOT NULL
+            """, nativeQuery = true)
+    BigDecimal sumTotalActualWeight();
+
+    long countByStatus(CollectionRequestStatus status);
+
     interface CollectorMonthlyCompletedCountView {
         Integer getYear();
 
@@ -258,6 +289,60 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
         Integer getDay();
 
         BigDecimal getTotalWeightKg();
+    }
+
+    interface CollectorMonthlyWasteVolumeView {
+        Integer getYearValue();
+
+        Integer getMonthValue();
+
+        BigDecimal getTotalWeightKg();
+
+        Long getTotalRequests();
+    }
+
+    interface CollectorQuarterlyWasteVolumeView {
+        Integer getYearValue();
+
+        Integer getQuarterValue();
+
+        BigDecimal getTotalWeightKg();
+
+        Long getTotalRequests();
+    }
+
+    interface EnterpriseMonthlyWasteVolumeView {
+        Integer getYearValue();
+
+        Integer getMonthValue();
+
+        BigDecimal getTotalWeightKg();
+
+        Long getTotalRequests();
+    }
+
+    interface EnterpriseQuarterlyWasteVolumeView {
+        Integer getYearValue();
+
+        Integer getQuarterValue();
+
+        BigDecimal getTotalWeightKg();
+
+        Long getTotalRequests();
+    }
+
+    interface EnterpriseCitizenPointSummaryView {
+        Integer getCitizenId();
+
+        String getFullName();
+
+        String getPhone();
+
+        Long getTotalPoints();
+
+        BigDecimal getTotalWeightKg();
+
+        Long getTotalCollections();
     }
 
     @Query(value = """
@@ -393,7 +478,124 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
             @Param("year") Integer year,
             @Param("month") Integer month);
 
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS yearValue,
+                    MONTH(COALESCE(cr.completed_at, cr.collected_at)) AS monthValue,
+                    SUM(COALESCE(cr.actual_weight_kg, 0)) AS totalWeightKg,
+                    COUNT(*) AS totalRequests
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status = 'completed'
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) >= :from
+                  AND COALESCE(cr.completed_at, cr.collected_at) < :to
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)), MONTH(COALESCE(cr.completed_at, cr.collected_at))
+                ORDER BY yearValue ASC, monthValue ASC
+            """, nativeQuery = true)
+    List<CollectorMonthlyWasteVolumeView> sumCompletedWeightByMonthForCollector(
+            @Param("collectorId") Integer collectorId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS yearValue,
+                    FLOOR((MONTH(COALESCE(cr.completed_at, cr.collected_at)) + 2) / 3) AS quarterValue,
+                    SUM(COALESCE(cr.actual_weight_kg, 0)) AS totalWeightKg,
+                    COUNT(*) AS totalRequests
+                FROM collection_requests cr
+                WHERE cr.collector_id = :collectorId
+                  AND cr.status = 'completed'
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) >= :from
+                  AND COALESCE(cr.completed_at, cr.collected_at) < :to
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)), FLOOR((MONTH(COALESCE(cr.completed_at, cr.collected_at)) + 2) / 3)
+                ORDER BY yearValue ASC, quarterValue ASC
+            """, nativeQuery = true)
+    List<CollectorQuarterlyWasteVolumeView> sumCompletedWeightByQuarterForCollector(
+            @Param("collectorId") Integer collectorId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS yearValue,
+                    MONTH(COALESCE(cr.completed_at, cr.collected_at)) AS monthValue,
+                    SUM(COALESCE(cr.actual_weight_kg, 0)) AS totalWeightKg,
+                    COUNT(*) AS totalRequests
+                FROM collection_requests cr
+                WHERE cr.enterprise_id = :enterpriseId
+                  AND cr.status = 'completed'
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) >= :from
+                  AND COALESCE(cr.completed_at, cr.collected_at) < :to
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)), MONTH(COALESCE(cr.completed_at, cr.collected_at))
+                ORDER BY yearValue ASC, monthValue ASC
+            """, nativeQuery = true)
+    List<EnterpriseMonthlyWasteVolumeView> sumCompletedWeightByMonthForEnterprise(
+            @Param("enterpriseId") Integer enterpriseId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
+    @Query(value = """
+                SELECT
+                    YEAR(COALESCE(cr.completed_at, cr.collected_at)) AS yearValue,
+                    FLOOR((MONTH(COALESCE(cr.completed_at, cr.collected_at)) + 2) / 3) AS quarterValue,
+                    SUM(COALESCE(cr.actual_weight_kg, 0)) AS totalWeightKg,
+                    COUNT(*) AS totalRequests
+                FROM collection_requests cr
+                WHERE cr.enterprise_id = :enterpriseId
+                  AND cr.status = 'completed'
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) >= :from
+                  AND COALESCE(cr.completed_at, cr.collected_at) < :to
+                GROUP BY YEAR(COALESCE(cr.completed_at, cr.collected_at)), FLOOR((MONTH(COALESCE(cr.completed_at, cr.collected_at)) + 2) / 3)
+                ORDER BY yearValue ASC, quarterValue ASC
+            """, nativeQuery = true)
+    List<EnterpriseQuarterlyWasteVolumeView> sumCompletedWeightByQuarterForEnterprise(
+            @Param("enterpriseId") Integer enterpriseId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
+    @Query(value = """
+                SELECT
+                    c.id AS citizenId,
+                    c.full_name AS fullName,
+                    c.phone AS phone,
+                    SUM(COALESCE(pt.points, 0)) AS totalPoints,
+                    SUM(COALESCE(cr.actual_weight_kg, 0)) AS totalWeightKg,
+                    COUNT(DISTINCT cr.id) AS totalCollections
+                FROM collection_requests cr
+                JOIN waste_reports wr ON cr.report_id = wr.id
+                JOIN citizens c ON wr.citizen_id = c.id
+                LEFT JOIN point_transactions pt
+                       ON pt.collection_request_id = cr.id
+                      AND pt.transaction_type = 'EARN'
+                WHERE cr.enterprise_id = :enterpriseId
+                  AND cr.status = 'completed'
+                  AND COALESCE(cr.completed_at, cr.collected_at) IS NOT NULL
+                  AND COALESCE(cr.completed_at, cr.collected_at) >= :from
+                  AND COALESCE(cr.completed_at, cr.collected_at) < :to
+                GROUP BY c.id, c.full_name, c.phone
+                ORDER BY totalPoints DESC, totalWeightKg DESC, citizenId ASC
+            """, nativeQuery = true)
+    List<EnterpriseCitizenPointSummaryView> summarizeCitizenPointsForEnterprise(
+            @Param("enterpriseId") Integer enterpriseId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
     Optional<CollectionRequest> findByIdAndCollector_Id(Integer id, Integer collectorId);
+
+    @Query("""
+                SELECT cr
+                FROM CollectionRequest cr
+                JOIN FETCH cr.report r
+                WHERE cr.enterprise.id = :enterpriseId
+                  AND cr.status = com.team2.Crowdsourced_Waste_Collection_Recycling_System.enums.CollectionRequestStatus.REASSIGN
+                ORDER BY cr.updatedAt DESC, cr.id DESC
+            """)
+    List<CollectionRequest> findCollectorRejectedRequests(@Param("enterpriseId") Integer enterpriseId);
 
     /**
      * Cập nhật trạng thái theo điều kiện (atomic) - dùng khi muốn update bằng query
@@ -441,6 +643,7 @@ public interface CollectionRequestRepository extends JpaRepository<CollectionReq
             "set cr.status = 'reassign'," +
             "cr.rejectionReason =:reason," +
             "cr.collector = null," +
+            "cr.assignedAt = null," +
             "cr.acceptedAt = null," +
             " cr.updatedAt = CURRENT_TIMESTAMP\n" +
             "        WHERE cr.id = :id\n" +
