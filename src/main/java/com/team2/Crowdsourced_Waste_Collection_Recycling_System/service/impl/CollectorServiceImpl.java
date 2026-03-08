@@ -430,38 +430,6 @@ public class CollectorServiceImpl implements CollectorService {
         
         updateReportStatus(requestId, WasteReportStatus.REASSIGN, now);
         saveTrackingLog(requestId, collectorId, "rejected", "Collector từ chối: " + reason);
-        autoAssignAnotherCollectorIfPossible(requestId, collectorId);
-    }
-
-    private void autoAssignAnotherCollectorIfPossible(Integer requestId, Integer rejectedCollectorId) {
-        CollectionRequest request = collectionRequestRepository.findById(requestId).orElse(null);
-        if (request == null || request.getEnterprise() == null || request.getEnterprise().getId() == null) {
-            return;
-        }
-        Integer enterpriseId = request.getEnterprise().getId();
-
-        var candidates = collectorRepository.findAvailableCollectors(enterpriseId);
-        Integer bestCollectorId = null;
-        long bestActive = Long.MAX_VALUE;
-        for (var c : candidates) {
-            if (c == null || c.getId() == null) {
-                continue;
-            }
-            if (rejectedCollectorId != null && c.getId().equals(rejectedCollectorId)) {
-                continue;
-            }
-            long active = collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ASSIGNED)
-                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ACCEPTED_COLLECTOR)
-                    + collectionRequestRepository.countByCollector_IdAndStatus(c.getId(), CollectionRequestStatus.ON_THE_WAY);
-            if (active < bestActive) {
-                bestActive = active;
-                bestCollectorId = c.getId();
-            }
-        }
-        if (bestCollectorId == null) {
-            return;
-        }
-        enterpriseAssignmentService.assignCollector(enterpriseId, requestId, bestCollectorId);
     }
 
     /**
@@ -493,10 +461,8 @@ public class CollectorServiceImpl implements CollectorService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái không được để trống");
         }
 
-        CollectorStatus newStatus;
-        try {
-            newStatus = CollectorStatus.valueOf(statusStr.toUpperCase());
-        } catch (IllegalArgumentException ex) {
+        CollectorStatus newStatus = CollectorStatus.fromString(statusStr);
+        if (newStatus == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái không hợp lệ");
         }
 
