@@ -28,7 +28,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AdminUserResponse> getAllUsers(String status, String roleCode) {
+    public List<AdminUserResponse> getAllUsers(String status, String roleCode, String adminEmail) {
         List<User> users;
 
         boolean hasStatus = status != null && !status.isBlank();
@@ -44,7 +44,10 @@ public class AdminAccountServiceImpl implements AdminAccountService {
             users = userRepository.findAll();
         }
 
-        return users.stream().map(this::toResponse).collect(Collectors.toList());
+        return users.stream()
+                .filter(user -> adminEmail == null || user.getEmail() == null || !user.getEmail().equalsIgnoreCase(adminEmail))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     // ─────────────────────────────────────────────

@@ -14,8 +14,9 @@ public interface AdminAccountService {
      *
      * @param status   lọc theo trạng thái ("active" | "suspended"), null = tất cả
      * @param roleCode lọc theo role (vd. "COLLECTOR"), null = tất cả
+     * @param adminEmail email của admin đang đăng nhập để loại trừ khỏi danh sách
      */
-    List<AdminUserResponse> getAllUsers(String status, String roleCode);
+    List<AdminUserResponse> getAllUsers(String status, String roleCode, String adminEmail);
 
     /**
      * Xem chi tiết một tài khoản.

@@ -40,9 +40,11 @@ public class AdminAccountController {
     @Operation(summary = "Lấy danh sách tài khoản", description = "Lọc tuỳ chọn theo status và roleCode")
     public ApiResponse<List<AdminUserResponse>> getAllUsers(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false) String role,
+            @AuthenticationPrincipal Jwt jwt) {
+        String adminEmail = extractAdminEmail(jwt);
         return ApiResponse.<List<AdminUserResponse>>builder()
-                .result(adminAccountService.getAllUsers(status, role))
+                .result(adminAccountService.getAllUsers(status, role, adminEmail))
                 .build();
     }
 
@@ -92,7 +94,6 @@ public class AdminAccountController {
 
     /**
      * Lấy email của admin từ JWT subject (claim "sub").
-     * JWT trong hệ thống này dùng email làm subject, không có claim userId riêng.
      */
     private String extractAdminEmail(Jwt jwt) {
         if (jwt == null) {
