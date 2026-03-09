@@ -567,31 +567,37 @@ public class WasteReportServiceImpl implements WasteReportService {
     public ComplaintResponse createComplaint(CreateComplaintRequest request, String citizenEmail) {
         Citizen citizen = requireCitizenByEmail(citizenEmail, ErrorCode.USER_NOT_EXISTED);
 
-        Optional<WasteReport> reportOpt = wasteReportRepository.findById(request.getReportId());
-        if (reportOpt.isEmpty()) {
-            throw new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND);
-        }
-        WasteReport report = reportOpt.get();
+        CollectionRequest collectionRequest = null;
+        if (request.getReportId() != null) {
+            Optional<WasteReport> reportOpt = wasteReportRepository.findById(request.getReportId());
+            if (reportOpt.isEmpty()) {
+                throw new AppException(ErrorCode.WASTE_REPORT_NOT_FOUND);
+            }
+            WasteReport report = reportOpt.get();
 
-        if (!report.getCitizen().getId().equals(citizen.getId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            if (!report.getCitizen().getId().equals(citizen.getId())) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+
+            collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
+            
+            String normalizedType = normalizeComplaintType(request.getType());
+            // Nếu khiếu nại về thưởng (tương đương POINT cũ), phải kiểm tra xem báo cáo đã được thu gom (COLLECTED) chưa
+            if ("COMPLAINT_REWARD".equals(normalizedType)) {
+                if (report.getStatus() != WasteReportStatus.COLLECTED) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST);
+                }
+            }
         }
 
         String normalizedType = normalizeComplaintType(request.getType());
         request.setType(normalizedType);
         
-        // Chỉ cho phép 2 loại complaint: COMPLAINT_SERVICE và COMPLAINT_REWARD
-        if (!"COMPLAINT_SERVICE".equals(normalizedType) && !"COMPLAINT_REWARD".equals(normalizedType)) {
+        // Chỉ cho phép 3 loại complaint: COMPLAINT_COLLECTION, COMPLAINT_REWARD, COMPLAINT_SYSTEM
+        if (!"COMPLAINT_COLLECTION".equals(normalizedType) 
+                && !"COMPLAINT_REWARD".equals(normalizedType) 
+                && !"COMPLAINT_SYSTEM".equals(normalizedType)) {
              throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
-
-        CollectionRequest collectionRequest = collectionRequestRepository.findByReport_Id(report.getId()).orElse(null);
-        
-        // Nếu khiếu nại về thưởng (tương đương POINT cũ), phải kiểm tra xem báo cáo đã được thu gom (COLLECTED) chưa
-        if ("COMPLAINT_REWARD".equals(normalizedType)) {
-            if (report.getStatus() != WasteReportStatus.COLLECTED) {
-                throw new AppException(ErrorCode.INVALID_REQUEST);
-            }
         }
 
         Feedback feedback = citizenFeatureMapper.toFeedback(request);
@@ -620,9 +626,11 @@ public class WasteReportServiceImpl implements WasteReportService {
         
         // Map các giá trị cũ sang mới (nếu cần thiết)
         if ("POINT".equals(normalized)) return "COMPLAINT_REWARD";
-        if ("COLLECTOR".equals(normalized)) return "COMPLAINT_SERVICE";
-        if ("SERVICE".equals(normalized)) return "COMPLAINT_SERVICE";
+        if ("COLLECTOR".equals(normalized)) return "COMPLAINT_COLLECTION";
+        if ("SERVICE".equals(normalized)) return "COMPLAINT_COLLECTION";
+        if ("COLLECTION".equals(normalized)) return "COMPLAINT_COLLECTION";
         if ("REWARD".equals(normalized)) return "COMPLAINT_REWARD";
+        if ("SYSTEM".equals(normalized)) return "COMPLAINT_SYSTEM";
         
         return normalized;
     }

@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateComplaintRequest {
-    @NotNull(message = "Mã báo cáo không được để trống")
     Integer reportId;
 
     @NotBlank(message = "Loại khiếu nại không được để trống")

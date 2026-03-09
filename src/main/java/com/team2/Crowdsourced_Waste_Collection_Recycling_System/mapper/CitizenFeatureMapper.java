@@ -36,7 +36,7 @@ public interface CitizenFeatureMapper {
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "updatedAt", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "status", constant = "PENDING")
-    @Mapping(target = "subject", expression = "java(\"Complaint for Report #\" + request.getReportId() + \" - \" + request.getType())")
+    @Mapping(target = "subject", expression = "java(request.getReportId() != null ? \"Complaint for Report #\" + request.getReportId() + \" - \" + request.getType() : \"General Complaint - \" + request.getType())")
     @Mapping(target = "content", source = "content")
     @Mapping(target = "feedbackType", source = "type")
     @Mapping(target = "rating", source = "rating")
