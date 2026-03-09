@@ -1,5 +1,6 @@
 package com.team2.Crowdsourced_Waste_Collection_Recycling_System.controller.admin;
 
+import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.request.AdminCreateUserRequest;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.AdminUserResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.dto.response.ApiResponse;
 import com.team2.Crowdsourced_Waste_Collection_Recycling_System.service.AdminAccountService;
@@ -32,6 +33,21 @@ public class AdminAccountController {
     private final AdminAccountService adminAccountService;
 
     /**
+     * Admin tạo tài khoản cho role CITIZEN/COLLECTOR/ENTERPRISE.
+     * Không cho phép tạo ADMIN hoặc ENTERPRISE_ADMIN.
+     */
+    @PostMapping
+    @Operation(summary = "Tạo tài khoản", description = "Admin tạo user cho role CITIZEN, COLLECTOR, ENTERPRISE")
+    public ApiResponse<AdminUserResponse> createUser(
+            @RequestBody AdminCreateUserRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String adminEmail = extractAdminEmail(jwt);
+        return ApiResponse.<AdminUserResponse>builder()
+                .result(adminAccountService.createUser(request, adminEmail))
+                .build();
+    }
+
+    /**
      * Lấy danh sách toàn bộ tài khoản.
      * Có thể lọc theo status (active/suspended) và/hoặc role (CITIZEN,
      * COLLECTOR...).
@@ -40,9 +56,11 @@ public class AdminAccountController {
     @Operation(summary = "Lấy danh sách tài khoản", description = "Lọc tuỳ chọn theo status và roleCode")
     public ApiResponse<List<AdminUserResponse>> getAllUsers(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false) String role,
+            @AuthenticationPrincipal Jwt jwt) {
+        String adminEmail = extractAdminEmail(jwt);
         return ApiResponse.<List<AdminUserResponse>>builder()
-                .result(adminAccountService.getAllUsers(status, role))
+                .result(adminAccountService.getAllUsers(status, role, adminEmail))
                 .build();
     }
 
@@ -92,7 +110,6 @@ public class AdminAccountController {
 
     /**
      * Lấy email của admin từ JWT subject (claim "sub").
-     * JWT trong hệ thống này dùng email làm subject, không có claim userId riêng.
      */
     private String extractAdminEmail(Jwt jwt) {
         if (jwt == null) {
